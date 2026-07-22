@@ -1,7 +1,7 @@
-/**
- * @param {string} algorithm
- */
-function openPage(algorithm) {
-    if (!algorithm) return;
-    window.location.href = `${algorithm}.html`;
+// Open the selected sorting algorithm page
+
+function openPage(page) {
+
+    window.location.href = `pages/${page}.html`;
+
 }
