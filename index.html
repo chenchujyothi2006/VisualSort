@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisualSort</title>
+
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>Visual<span>Sort</span></h1>
+
+        <p>Learn Sorting Algorithms Visually</p>
+
+        <!-- First Row -->
+
+        <div class="row">
+
+            <div class="card" onclick="openPage('bubble')">
+                <i class="fa-solid fa-water"></i>
+                <h2>Bubble Sort</h2>
+            </div>
+
+            <div class="card" onclick="openPage('selection')">
+                <i class="fa-solid fa-arrow-pointer"></i>
+                <h2>Selection Sort</h2>
+            </div>
+
+            <div class="card" onclick="openPage('insertion')">
+                <i class="fa-solid fa-right-to-bracket"></i>
+                <h2>Insertion Sort</h2>
+            </div>
+
+        </div>
+
+        <!-- Second Row -->
+
+        <div class="row">
+
+            <div class="card" onclick="openPage('merge')">
+                <i class="fa-solid fa-code-branch"></i>
+                <h2>Merge Sort</h2>
+            </div>
+
+            <div class="card" onclick="openPage('quick')">
+                <i class="fa-solid fa-bolt"></i>
+                <h2>Quick Sort</h2>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script src="js/dashboard.js"></script>
+
+</body>
+
+</html>

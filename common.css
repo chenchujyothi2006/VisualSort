@@ -1,0 +1,59 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    overflow-x: hidden;
+}
+
+a {
+    text-decoration: none;
+}
+
+button {
+    cursor: pointer;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Background Glowing Blurs */
+.background {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: -1;
+}
+
+.background span {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(100px);
+    opacity: 0.25;
+}
+
+.background span:nth-child(1) {
+    width: 300px;
+    height: 300px;
+    background: #0077ff;
+    top: 10%;
+    left: -100px;
+}
+
+.background span:nth-child(2) {
+    width: 350px;
+    height: 350px;
+    background: #8a2be2;
+    right: -120px;
+    top: 5%;
+}
+
+.background span:nth-child(3) {
+    width: 250px;
+    height: 250px;
+    background: #00d4ff;
+    bottom: -80px;
+    left: 40%;
+}

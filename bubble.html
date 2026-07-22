@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bubble Sort | VisualSort</title>
+    <link rel="stylesheet" href="../css/visualizer.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+<header>
+    <button class="back-btn" onclick="window.location.href='../index.html'">
+        ← Dashboard
+    </button>
+    <h1>Bubble Sort Visualization</h1>
+</header>
+
+<div class="main-container">
+
+    <!-- Controls -->
+    <div class="controls">
+        <h2>Controls</h2>
+
+        <label>Array Size</label>
+        <input type="number" id="size" value="8" min="2" max="15">
+
+        <label>Array Elements</label>
+        <input type="text" id="arrayInput" placeholder="Example : 8 5 3 1 9">
+
+        <label>Animation Speed</label>
+        <select id="speed">
+            <option value="1000">Slow</option>
+            <option value="500" selected>Medium</option>
+            <option value="200">Fast</option>
+        </select>
+
+        <button onclick="randomArray()">Random Array</button>
+        <button id="startBtn" onclick="startSorting()">▶ Start Sorting</button>
+        <button onclick="pauseSorting()">⏸ Pause</button>
+        <button onclick="resumeSorting()">▶ Resume</button>
+        <button onclick="resetArray()">🔄 Reset</button>
+    </div>
+
+    <!-- Visualization -->
+    <div class="visualization">
+        <h2>Visualization</h2>
+
+        <div class="color-legend">
+            <div class="legend-item"><span class="color-box default-box"></span> Unsorted</div>
+            <div class="legend-item"><span class="color-box compare-box"></span> Comparing</div>
+            <div class="legend-item"><span class="color-box swap-box"></span> Swapping</div>
+            <div class="legend-item"><span class="color-box sorted-box"></span> Sorted</div>
+        </div>
+
+        <div class="viz-stage">
+            <div id="pointers-container"></div>
+            <div id="bars"></div>
+        </div>
+    </div>
+
+    <!-- Pseudocode Panel -->
+    <div class="pseudocode-card">
+        <h2>Algorithm Pseudocode</h2>
+        <div class="pseudocode-box">
+            <div class="code-line" id="line-1">procedure bubbleSort(A : list)</div>
+            <div class="code-line" id="line-2">&nbsp;&nbsp;n = length(A)</div>
+            <div class="code-line" id="line-3">&nbsp;&nbsp;for i = 0 to n - 1 do</div>
+            <div class="code-line" id="line-4">&nbsp;&nbsp;&nbsp;&nbsp;for j = 0 to n - i - 2 do</div>
+            <div class="code-line" id="line-5">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if A[j] > A[j + 1] then</div>
+            <div class="code-line" id="line-6">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;swap(A[j], A[j + 1])</div>
+            <div class="code-line" id="line-7">&nbsp;&nbsp;&nbsp;&nbsp;mark A[n - i - 1] as sorted</div>
+        </div>
+    </div>
+
+</div>
+
+<div class="bottom">
+
+    <!-- Iteration Log -->
+    <div class="log">
+        <h2>Iteration Log</h2>
+        <div id="log">
+            No iterations yet.
+        </div>
+    </div>
+
+    <!-- Information -->
+    <div class="info">
+        <h2>Bubble Sort</h2>
+        <h3>Statistics</h3>
+
+        <p>Array Size : <span id="arraySize">0</span></p>
+        <p>Comparisons : <span id="comparisons">0</span></p>
+        <p>Swaps : <span id="swaps">0</span></p>
+        <p>Passes : <span id="passes">0</span></p>
+        <p>Execution Time : <span id="executionTime">0 ms</span></p>
+
+        <hr style="margin:15px 0;">
+
+        <p>
+            Bubble Sort repeatedly compares adjacent elements and
+            swaps them whenever they are in the wrong order.
+            After every pass, the largest element moves to the end.
+        </p>
+
+        <br>
+
+        <p><b>Best Case :</b> O(n)</p>
+        <p><b>Average Case :</b> O(n²)</p>
+        <p><b>Worst Case :</b> O(n²)</p>
+        <p><b>Space :</b> O(1)</p>
+        <p><b>Stable :</b> Yes</p>
+    </div>
+
+</div>
+
+<script src="../js/bubble.js"></script>
+
+</body>
+</html>
