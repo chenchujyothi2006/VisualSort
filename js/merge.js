@@ -3,10 +3,29 @@ let isSorting = false;
 let isPaused = false;
 let delay = 400;
 
+let totalMerges = 0;
+let totalComparisons = 0;
+let totalWrites = 0;
+let sortedIndices = new Set();
+
 const arrayContainer = document.getElementById("array-container");
 const inputField = document.getElementById("array-input");
 const speedSelect = document.getElementById("speed");
 const logBox = document.getElementById("execution-log");
+
+function updateMetricsUI() {
+    if (document.getElementById("stat-passes")) document.getElementById("stat-passes").innerText = totalMerges;
+    if (document.getElementById("stat-comparisons")) document.getElementById("stat-comparisons").innerText = totalComparisons;
+    if (document.getElementById("stat-swaps")) document.getElementById("stat-swaps").innerText = totalWrites;
+}
+
+function resetMetrics() {
+    totalMerges = 0;
+    totalComparisons = 0;
+    totalWrites = 0;
+    sortedIndices.clear();
+    updateMetricsUI();
+}
 
 function sleep(ms) {
     return new Promise((resolve) => {
@@ -40,7 +59,7 @@ function parseInput() {
     return val ? val.split(/[\s,]+/).map(Number).filter(n => !isNaN(n)) : [];
 }
 
-function renderArray(arr = array, pointers = {}) {
+function renderArray(arr = array, sortedSet = sortedIndices, pointers = {}) {
     if (!arrayContainer) return;
     arrayContainer.innerHTML = "";
     const maxVal = Math.max(...arr, 1);
@@ -53,6 +72,9 @@ function renderArray(arr = array, pointers = {}) {
         bar.classList.add("bar");
         bar.style.height = `${Math.min((value / maxVal) * 75 + 15, 95)}%`;
         bar.innerText = value;
+
+        if (sortedSet.has(index)) bar.classList.add("sorted");
+
         wrapper.appendChild(bar);
 
         let pointerText = [];
@@ -73,8 +95,11 @@ function renderArray(arr = array, pointers = {}) {
 }
 
 async function merge(l, m, r) {
+    totalMerges++;
+    updateMetricsUI();
+
     highlightCode(5);
-    addLog(`Merging sub-arrays [${l}..${m}] and [${m + 1}..${r}]`, "pass");
+    addLog(`Merge ${totalMerges}: Merging sub-arrays [${l}..${m}] & [${m + 1}..${r}]`, "pass");
 
     let n1 = m - l + 1;
     let n2 = r - m;
@@ -90,10 +115,13 @@ async function merge(l, m, r) {
     while (i < n1 && j < n2) {
         if (!isSorting) return;
 
+        totalComparisons++;
+        updateMetricsUI();
+
         highlightCode(6);
-        renderArray(array, { left: l, mid: m, right: r, k: k });
+        renderArray(array, sortedIndices, { left: l, mid: m, right: r, k: k });
         let bars = document.querySelectorAll(".bar");
-        bars[k].classList.add("comparing");
+        if (bars[k]) bars[k].classList.add("comparing");
         addLog(`Comparing L[${i}] (${L[i]}) and R[${j}] (${R[j]})`);
         await sleep(delay);
 
@@ -106,9 +134,12 @@ async function merge(l, m, r) {
             j++;
         }
 
-        renderArray(array, { left: l, right: r, k: k });
+        totalWrites++;
+        updateMetricsUI();
+
+        renderArray(array, sortedIndices, { left: l, right: r, k: k });
         bars = document.querySelectorAll(".bar");
-        bars[k].classList.add("swapping");
+        if (bars[k]) bars[k].classList.add("swapping");
         await sleep(delay);
         k++;
     }
@@ -116,7 +147,9 @@ async function merge(l, m, r) {
     while (i < n1) {
         if (!isSorting) return;
         array[k] = L[i];
-        renderArray(array, { k: k });
+        totalWrites++;
+        updateMetricsUI();
+        renderArray(array, sortedIndices, { k: k });
         i++;
         k++;
         await sleep(delay);
@@ -125,7 +158,9 @@ async function merge(l, m, r) {
     while (j < n2) {
         if (!isSorting) return;
         array[k] = R[j];
-        renderArray(array, { k: k });
+        totalWrites++;
+        updateMetricsUI();
+        renderArray(array, sortedIndices, { k: k });
         j++;
         k++;
         await sleep(delay);
@@ -139,8 +174,8 @@ async function mergeSortHelper(l, r) {
     let m = l + Math.floor((r - l) / 2);
 
     highlightCode(2);
-    addLog(`Split array at index ${m}`, "highlight");
-    renderArray(array, { left: l, mid: m, right: r });
+    addLog(`Splitting range [${l}..${r}] at mid = ${m}`, "highlight");
+    renderArray(array, sortedIndices, { left: l, mid: m, right: r });
     await sleep(delay);
 
     highlightCode(3);
@@ -156,13 +191,20 @@ async function startMergeSort() {
     isSorting = true;
     isPaused = false;
     clearLogs();
+    resetMetrics();
     addLog("Starting Merge Sort...", "highlight");
 
     await mergeSortHelper(0, array.length - 1);
 
-    renderArray(array);
-    document.querySelectorAll(".bar").forEach(b => b.classList.add("sorted"));
-    addLog("Array sorted successfully!", "highlight");
+    for (let i = 0; i < array.length; i++) sortedIndices.add(i);
+    renderArray(array, sortedIndices);
+
+    addLog("----------------------------------", "highlight");
+    addLog("🎉 SORTING COMPLETED!", "highlight");
+    addLog(`Total Merges: ${totalMerges} | Comparisons: ${totalComparisons} | Array Writes: ${totalWrites}`);
+    addLog(`Time Complexity: O(N log N) | Space Complexity: O(N)`);
+    addLog("----------------------------------", "highlight");
+
     highlightCode(0);
     isSorting = false;
 }
@@ -170,12 +212,13 @@ async function startMergeSort() {
 function startSorting() { if (!isSorting) { array = parseInput(); startMergeSort(); } }
 function pauseSorting() { isPaused = true; }
 function resumeSorting() { isPaused = false; }
-function resetVisualizer() { isSorting = false; isPaused = false; array = parseInput(); renderArray(array); clearLogs(); highlightCode(0); }
+function resetVisualizer() { isSorting = false; isPaused = false; array = parseInput(); renderArray(array); clearLogs(); resetMetrics(); highlightCode(0); }
 function generateRandomArray() {
     array = Array.from({ length: 5 }, () => Math.floor(Math.random() * 50) + 1);
     inputField.value = array.join(" ");
     renderArray(array);
     clearLogs();
+    resetMetrics();
 }
 
 if (speedSelect) {
