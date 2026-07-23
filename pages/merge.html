@@ -50,6 +50,24 @@
             </div>
             <div id="array-container" class="visualization-box"></div>
 
+            <div class="metrics-container">
+                <h3>Execution Metrics</h3>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="label">Merges</div>
+                        <div id="stat-passes" class="value">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="label">Comparisons</div>
+                        <div id="stat-comparisons" class="value">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="label">Writes</div>
+                        <div id="stat-swaps" class="value">0</div>
+                    </div>
+                </div>
+            </div>
+
             <div class="log-container">
                 <h3>Iteration Log</h3>
                 <div id="execution-log" class="log-box">
@@ -61,7 +79,7 @@
         <section class="right-sidebar">
             <section class="panel info-panel">
                 <h2>Algorithm Info</h2>
-                <p><strong>Merge Sort</strong> divides the input array into two halves, recursively sorts them, and then merges the two sorted halves together.</p>
+                <p><strong>Merge Sort</strong> divides the array in half, recursively sorts both halves, and then merges them back together.</p>
                 <div class="complexity-grid">
                     <div><strong>Best Time:</strong> <span>O(N log N)</span></div>
                     <div><strong>Avg Time:</strong> <span>O(N log N)</span></div>
