@@ -1,211 +1,286 @@
+// State Management Variables
 let array = [];
 let isSorting = false;
 let isPaused = false;
-let delay = 400;
-
-let totalPartitions = 0;
-let totalComparisons = 0;
-let totalSwaps = 0;
+let passes = 0; // Partitions count
+let comparisons = 0;
+let swaps = 0;
 let sortedIndices = new Set();
 
-const arrayContainer = document.getElementById("array-container");
-const inputField = document.getElementById("array-input");
-const speedSelect = document.getElementById("speed");
-const logBox = document.getElementById("execution-log");
+const SPEED_MAP = { slow: 800, medium: 400, fast: 150 };
 
-function updateMetricsUI() {
-    if (document.getElementById("stat-passes")) document.getElementById("stat-passes").innerText = totalPartitions;
-    if (document.getElementById("stat-comparisons")) document.getElementById("stat-comparisons").innerText = totalComparisons;
-    if (document.getElementById("stat-swaps")) document.getElementById("stat-swaps").innerText = totalSwaps;
+// DOM References
+const arrayContainer = document.getElementById("array-container");
+const arrayInput = document.getElementById("array-input");
+const arraySizeInput = document.getElementById("array-size");
+const speedSelect = document.getElementById("speed");
+
+const statPasses = document.getElementById("stat-passes");
+const statComparisons = document.getElementById("stat-comparisons");
+const statSwaps = document.getElementById("stat-swaps");
+const executionLog = document.getElementById("execution-log");
+
+const btnStart = document.getElementById("btn-start");
+const btnPause = document.getElementById("btn-pause");
+const btnResume = document.getElementById("btn-resume");
+const btnRandom = document.getElementById("btn-random");
+
+document.addEventListener("DOMContentLoaded", () => {
+    arrayInput.addEventListener("input", parseCustomInput);
+    arraySizeInput.addEventListener("change", handleSizeChange);
+    arraySizeInput.addEventListener("input", handleSizeChange);
+    parseCustomInput();
+});
+
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+async function checkPause() {
+    while (isPaused && isSorting) {
+        await sleep(100);
+    }
+}
+
+function renderArray(highlightIndices = {}, activeLine = null) {
+    arrayContainer.innerHTML = "";
+    const maxVal = Math.max(...array, 10);
+
+    array.forEach((val, idx) => {
+        const bar = document.createElement("div");
+        bar.classList.add("bar");
+        const heightPercent = Math.max((val / maxVal) * 85, 10);
+        bar.style.height = `${heightPercent}%`;
+
+        const label = document.createElement("span");
+        label.classList.add("bar-value");
+        label.textContent = val;
+        bar.appendChild(label);
+
+        if (highlightIndices.pivotIdx === idx) {
+            bar.classList.add("pivot");
+        } else if (highlightIndices.comparing && highlightIndices.comparing.includes(idx)) {
+            bar.classList.add("comparing");
+        } else if (highlightIndices.swapping && highlightIndices.swapping.includes(idx)) {
+            bar.classList.add("swapping");
+        } else if (sortedIndices.has(idx) || highlightIndices.allSorted) {
+            bar.classList.add("sorted");
+        } else {
+            bar.classList.add("unsorted");
+        }
+
+        arrayContainer.appendChild(bar);
+    });
+
+    highlightPseudocode(activeLine);
+}
+
+function highlightPseudocode(lineId) {
+    document.querySelectorAll(".pseudocode p").forEach(p => p.classList.remove("active-line"));
+    if (lineId) {
+        const target = document.getElementById(`line-${lineId}`);
+        if (target) target.classList.add("active-line");
+    }
+}
+
+function addLog(message) {
+    const p = document.createElement("p");
+    p.classList.add("log-entry");
+    p.textContent = message;
+    executionLog.appendChild(p);
+    executionLog.scrollTop = executionLog.scrollHeight;
 }
 
 function resetMetrics() {
-    totalPartitions = 0;
-    totalComparisons = 0;
-    totalSwaps = 0;
+    passes = 0;
+    comparisons = 0;
+    swaps = 0;
     sortedIndices.clear();
-    updateMetricsUI();
+    statPasses.textContent = "0";
+    statComparisons.textContent = "0";
+    statSwaps.textContent = "0";
+    executionLog.innerHTML = '<p class="log-entry">Click "Start Sorting" to view execution steps...</p>';
+    highlightPseudocode(null);
 }
 
-function sleep(ms) {
-    return new Promise((resolve) => {
-        const check = () => {
-            if (!isPaused) setTimeout(resolve, ms);
-            else setTimeout(check, 100);
-        };
-        check();
-    });
+function parseCustomInput() {
+    if (isSorting) return;
+    const raw = arrayInput.value.trim();
+    if (!raw) {
+        array = [];
+        arrayContainer.innerHTML = "";
+        return;
+    }
+    const parsed = raw.split(/[\s,]+/).map(Number).filter(n => !isNaN(n));
+    if (parsed.length > 0) {
+        array = parsed.slice(0, 20);
+        arraySizeInput.value = array.length;
+        resetMetrics();
+        renderArray();
+    }
 }
 
-function addLog(msg, type = "info") {
-    if (!logBox) return;
-    const entry = document.createElement("p");
-    entry.className = `log-entry ${type}`;
-    entry.innerText = `> ${msg}`;
-    logBox.appendChild(entry);
-    logBox.scrollTop = logBox.scrollHeight;
+function handleSizeChange() {
+    if (isSorting) return;
+    let size = parseInt(arraySizeInput.value) || 5;
+    size = Math.min(Math.max(size, 2), 20);
+    arraySizeInput.value = size;
+
+    array = Array.from({ length: size }, () => Math.floor(Math.random() * 90) + 10);
+    arrayInput.value = array.join(" ");
+    resetMetrics();
+    renderArray();
 }
 
-function clearLogs() { if (logBox) logBox.innerHTML = ""; }
-
-function highlightCode(lineNum) {
-    document.querySelectorAll(".pseudocode p").forEach(p => p.classList.remove("active"));
-    const line = document.getElementById(`line-${lineNum}`);
-    if (line) line.classList.add("active");
+function generateRandomArray() {
+    if (isSorting) return;
+    const size = parseInt(arraySizeInput.value) || 5;
+    array = Array.from({ length: size }, () => Math.floor(Math.random() * 90) + 10);
+    arrayInput.value = array.join(" ");
+    resetMetrics();
+    renderArray();
 }
 
-function parseInput() {
-    const val = inputField ? inputField.value.trim() : "";
-    return val ? val.split(/[\s,]+/).map(Number).filter(n => !isNaN(n)) : [];
-}
-
-function renderArray(arr = array, sortedSet = sortedIndices, pointers = {}) {
-    if (!arrayContainer) return;
-    arrayContainer.innerHTML = "";
-    const maxVal = Math.max(...arr, 1);
-
-    arr.forEach((value, index) => {
-        const wrapper = document.createElement("div");
-        wrapper.classList.add("bar-wrapper");
-
-        const bar = document.createElement("div");
-        bar.classList.add("bar");
-        bar.style.height = `${Math.min((value / maxVal) * 75 + 15, 95)}%`;
-        bar.innerText = value;
-
-        if (sortedSet.has(index)) bar.classList.add("sorted");
-        else if (index === pointers.pivotIdx) bar.classList.add("pivot");
-
-        wrapper.appendChild(bar);
-
-        let pointerText = [];
-        if (pointers.i === index) pointerText.push("i");
-        if (pointers.j === index) pointerText.push("j");
-        if (pointers.pivotIdx === index) pointerText.push("pivot");
-
-        if (pointerText.length > 0) {
-            const label = document.createElement("div");
-            label.classList.add("pointer-label");
-            label.innerText = pointerText.join(",");
-            wrapper.appendChild(label);
-        }
-
-        arrayContainer.appendChild(wrapper);
-    });
+function toggleInputs(disabled) {
+    arrayInput.disabled = disabled;
+    arraySizeInput.disabled = disabled;
+    btnRandom.disabled = disabled;
+    btnStart.disabled = disabled;
+    btnPause.disabled = !disabled;
+    btnResume.disabled = true;
 }
 
 async function partition(low, high) {
-    totalPartitions++;
-    updateMetricsUI();
-
+    const delay = () => SPEED_MAP[speedSelect.value] || 400;
     let pivot = array[high];
     let i = low - 1;
 
-    addLog(`Partition ${totalPartitions}: Range [${low}..${high}], Pivot = ${pivot}`, "pass");
-    highlightCode(2);
-    renderArray(array, sortedIndices, { i: i, pivotIdx: high });
-    await sleep(delay);
+    passes++;
+    statPasses.textContent = passes;
+    addLog(`--- Partitioning range [${low}...${high}] with Pivot = ${pivot} ---`);
+
+    renderArray({ pivotIdx: high }, 3);
+    await sleep(delay());
 
     for (let j = low; j < high; j++) {
         if (!isSorting) return i + 1;
+        await checkPause();
 
-        totalComparisons++;
-        updateMetricsUI();
-        highlightCode(3);
-        renderArray(array, sortedIndices, { i: i, j: j, pivotIdx: high });
-        let bars = document.querySelectorAll(".bar");
-        if (bars[j]) bars[j].classList.add("comparing");
-        addLog(`Comparing element ${array[j]} with Pivot ${pivot}`);
-        await sleep(delay);
+        comparisons++;
+        statComparisons.textContent = comparisons;
 
-        highlightCode(4);
-        if (array[j] < pivot) {
+        renderArray({ pivotIdx: high, comparing: [j, i >= low ? i : low] }, 3);
+        addLog(`Comparing element A[${j}] (${array[j]}) <= Pivot (${pivot})`);
+        await sleep(delay());
+
+        if (array[j] <= pivot) {
             i++;
-            totalSwaps++;
-            updateMetricsUI();
-            addLog(`Element ${array[j]} < ${pivot}. Swapping to index ${i}`, "swap");
-            highlightCode(5);
+            if (i !== j) {
+                swaps++;
+                statSwaps.textContent = swaps;
 
-            let temp = array[i];
-            array[i] = array[j];
-            array[j] = temp;
+                let temp = array[i];
+                array[i] = array[j];
+                array[j] = temp;
 
-            renderArray(array, sortedIndices, { i: i, j: j, pivotIdx: high });
-            await sleep(delay);
+                arrayInput.value = array.join(" ");
+                renderArray({ pivotIdx: high, swapping: [i, j] }, 3);
+                addLog(`Swapped A[${i}] (${array[i]}) and A[${j}] (${array[j]})`);
+                await sleep(delay());
+            }
         }
     }
 
-    highlightCode(6);
-    totalSwaps++;
-    updateMetricsUI();
-    addLog(`Placing Pivot ${pivot} into its correct index ${i + 1}`, "sorted");
+    // Place pivot in correct position
+    if (i + 1 !== high) {
+        swaps++;
+        statSwaps.textContent = swaps;
 
-    let temp = array[i + 1];
-    array[i + 1] = array[high];
-    array[high] = temp;
+        let temp = array[i + 1];
+        array[i + 1] = array[high];
+        array[high] = temp;
 
-    // Pivot is now in its permanently sorted position
+        arrayInput.value = array.join(" ");
+        renderArray({ swapping: [i + 1, high] }, 3);
+        addLog(`Swapped Pivot ${pivot} into correct index ${i + 1}`);
+        await sleep(delay());
+    }
+
     sortedIndices.add(i + 1);
-    renderArray(array, sortedIndices, { pivotIdx: i + 1 });
-    await sleep(delay);
-
     return i + 1;
 }
 
-async function quickSortHelper(low, high) {
+async function quickSortRecursive(low, high) {
+    if (!isSorting) return;
+    const delay = () => SPEED_MAP[speedSelect.value] || 400;
+
+    highlightPseudocode(1);
+    await sleep(delay());
+
     if (low <= high) {
+        highlightPseudocode(2);
+        await sleep(delay());
+
         if (low === high) {
             sortedIndices.add(low);
-            renderArray(array, sortedIndices);
+            renderArray();
             return;
         }
-        highlightCode(1);
-        let pi = await partition(low, high);
-        highlightCode(7);
-        await quickSortHelper(low, pi - 1);
-        await quickSortHelper(pi + 1, high);
+
+        let pIdx = await partition(low, high);
+
+        highlightPseudocode(4);
+        await quickSortRecursive(low, pIdx - 1);
+
+        highlightPseudocode(5);
+        await quickSortRecursive(pIdx + 1, high);
     }
 }
 
-async function startQuickSort() {
+async function startSorting() {
+    if (isSorting || array.length < 2) return;
+
     isSorting = true;
     isPaused = false;
-    clearLogs();
+    toggleInputs(true);
     resetMetrics();
-    addLog("Starting Quick Sort...", "highlight");
 
-    await quickSortHelper(0, array.length - 1);
+    executionLog.innerHTML = "";
+    addLog("Starting Quick Sort...");
 
-    for (let i = 0; i < array.length; i++) sortedIndices.add(i);
-    renderArray(array, sortedIndices);
+    await quickSortRecursive(0, array.length - 1);
 
-    addLog("----------------------------------", "highlight");
-    addLog("🎉 SORTING COMPLETED!", "highlight");
-    addLog(`Total Partitions: ${totalPartitions} | Comparisons: ${totalComparisons} | Swaps: ${totalSwaps}`);
-    addLog(`Time Complexity: O(N log N) | Space Complexity: O(log N)`);
-    addLog("----------------------------------", "highlight");
-
-    highlightCode(0);
     isSorting = false;
+    renderArray({ allSorted: true }, null);
+    addLog("🎉 Array fully sorted!");
+
+    btnPause.disabled = true;
+    btnResume.disabled = true;
+    btnStart.disabled = false;
+    arrayInput.disabled = false;
+    arraySizeInput.disabled = false;
+    btnRandom.disabled = false;
 }
 
-function startSorting() { if (!isSorting) { array = parseInput(); startQuickSort(); } }
-function pauseSorting() { isPaused = true; }
-function resumeSorting() { isPaused = false; }
-function resetVisualizer() { isSorting = false; isPaused = false; array = parseInput(); renderArray(array); clearLogs(); resetMetrics(); highlightCode(0); }
-function generateRandomArray() {
-    array = Array.from({ length: 5 }, () => Math.floor(Math.random() * 50) + 1);
-    inputField.value = array.join(" ");
-    renderArray(array);
-    clearLogs();
-    resetMetrics();
+function pauseSorting() {
+    if (!isSorting || isPaused) return;
+    isPaused = true;
+    btnPause.disabled = true;
+    btnResume.disabled = false;
+    addLog("⏸ Visualization Paused.");
 }
 
-if (speedSelect) {
-    speedSelect.addEventListener("change", (e) => {
-        const val = e.target.value.toLowerCase();
-        delay = val === "slow" ? 800 : val === "fast" ? 150 : 400;
-    });
+function resumeSorting() {
+    if (!isSorting || !isPaused) return;
+    isPaused = false;
+    btnPause.disabled = false;
+    btnResume.disabled = true;
+    addLog("▶ Visualization Resumed.");
 }
 
-document.addEventListener("DOMContentLoaded", () => { array = parseInput(); renderArray(array); });
+function resetVisualizer() {
+    isSorting = false;
+    isPaused = false;
+    toggleInputs(false);
+    btnPause.disabled = true;
+    btnResume.disabled = true;
+    parseCustomInput();
+}
