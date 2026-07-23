@@ -1,127 +1,91 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quick Sort | VisualSort</title>
+    <title>Quick Sort Visualizer</title>
     <link rel="stylesheet" href="../css/visualizer.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
 </head>
-
 <body>
+    <header class="navbar">
+        <a href="../index.html" class="btn-dashboard">← Dashboard</a>
+        <h1>Quick Sort Visualizer</h1>
+    </header>
 
-<header>
-    <button class="back-btn" onclick="window.location.href='../index.html'">
-        ← Dashboard
-    </button>
-    <h1>Quick Sort Visualization</h1>
-</header>
+    <main class="main-container">
+        <section class="panel controls-panel">
+            <h2>Controls</h2>
+            <div class="control-group">
+                <label for="array-size">Array Size</label>
+                <input type="number" id="array-size" value="5" disabled>
+            </div>
+            <div class="control-group">
+                <label for="array-input">Array Elements</label>
+                <input type="text" id="array-input" value="8 5 3 1 9">
+            </div>
+            <div class="control-group">
+                <label for="speed">Animation Speed</label>
+                <select id="speed">
+                    <option value="slow">Slow</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="fast">Fast</option>
+                </select>
+            </div>
+            <div class="button-group">
+                <button onclick="generateRandomArray()">Random Array</button>
+                <button class="primary-btn" onclick="startSorting()">▶ Start Sorting</button>
+                <button onclick="pauseSorting()">⏸ Pause</button>
+                <button onclick="resumeSorting()">▶ Resume</button>
+                <button onclick="resetVisualizer()">🔄 Reset</button>
+            </div>
+        </section>
 
-<div class="main-container">
+        <section class="panel visualization-panel">
+            <h2>Visualization</h2>
+            <div class="legend">
+                <span class="legend-item"><span class="color-box unsorted"></span> Unsorted</span>
+                <span class="legend-item"><span class="color-box comparing"></span> Comparing</span>
+                <span class="legend-item"><span class="color-box swapping"></span> Swapping</span>
+                <span class="legend-item"><span class="color-box pivot"></span> Pivot</span>
+                <span class="legend-item"><span class="color-box sorted"></span> Sorted</span>
+            </div>
+            <div id="array-container" class="visualization-box"></div>
 
-    <!-- Controls -->
-    <div class="controls">
-        <h2>Controls</h2>
+            <div class="log-container">
+                <h3>Iteration Log</h3>
+                <div id="execution-log" class="log-box">
+                    <p class="log-entry">Click "Start Sorting" to view execution steps...</p>
+                </div>
+            </div>
+        </section>
 
-        <label>Array Size</label>
-        <input type="number" id="size" value="8" min="2" max="15">
+        <section class="right-sidebar">
+            <section class="panel info-panel">
+                <h2>Algorithm Info</h2>
+                <p><strong>Quick Sort</strong> is a Divide and Conquer algorithm. It picks an element as a pivot and partitions the array around the pivot.</p>
+                <div class="complexity-grid">
+                    <div><strong>Best Time:</strong> <span>O(N log N)</span></div>
+                    <div><strong>Avg Time:</strong> <span>O(N log N)</span></div>
+                    <div><strong>Worst Time:</strong> <span>O(N²)</span></div>
+                    <div><strong>Space:</strong> <span>O(log N)</span></div>
+                </div>
+            </section>
 
-        <label>Array Elements</label>
-        <input type="text" id="arrayInput" placeholder="Example : 8 5 3 1 9">
+            <section class="panel pseudocode-panel">
+                <h2>Algorithm Pseudocode</h2>
+                <div class="pseudocode">
+                    <p id="line-1">procedure quickSort(A, low, high)</p>
+                    <p id="line-2">&nbsp;&nbsp;pivot = A[high], i = low - 1</p>
+                    <p id="line-3">&nbsp;&nbsp;for j = low to high - 1 do</p>
+                    <p id="line-4">&nbsp;&nbsp;&nbsp;&nbsp;if A[j] < pivot then</p>
+                    <p id="line-5">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;i++, swap A[i] and A[j]</p>
+                    <p id="line-6">&nbsp;&nbsp;swap A[i + 1] and A[high]</p>
+                    <p id="line-7">&nbsp;&nbsp;recurse left and right</p>
+                </div>
+            </section>
+        </section>
+    </main>
 
-        <label>Animation Speed</label>
-        <select id="speed">
-            <option value="1000">Slow</option>
-            <option value="500" selected>Medium</option>
-            <option value="200">Fast</option>
-        </select>
-
-        <button onclick="randomArray()">Random Array</button>
-        <button id="startBtn" onclick="startSorting()">▶ Start Sorting</button>
-        <button onclick="pauseSorting()">⏸ Pause</button>
-        <button onclick="resumeSorting()">▶ Resume</button>
-        <button onclick="resetArray()">🔄 Reset</button>
-    </div>
-
-    <!-- Visualization -->
-    <div class="visualization">
-        <h2>Visualization</h2>
-
-        <div class="color-legend">
-            <div class="legend-item"><span class="color-box default-box"></span> Unsorted</div>
-            <div class="legend-item"><span class="color-box compare-box"></span> Comparing / Pivot</div>
-            <div class="legend-item"><span class="color-box swap-box"></span> Partition Swap</div>
-            <div class="legend-item"><span class="color-box sorted-box"></span> Fixed Pivot / Sorted</div>
-        </div>
-
-        <div class="viz-stage">
-            <div id="pointers-container"></div>
-            <div id="bars"></div>
-        </div>
-    </div>
-
-    <!-- Pseudocode Panel -->
-    <div class="pseudocode-card">
-        <h2>Algorithm Pseudocode</h2>
-        <div class="pseudocode-box">
-            <div class="code-line" id="line-1">procedure quickSort(A, low, high)</div>
-            <div class="code-line" id="line-2">&nbsp;&nbsp;if low < high then</div>
-            <div class="code-line" id="line-3">&nbsp;&nbsp;&nbsp;&nbsp;pivotIdx = partition(A, low, high)</div>
-            <div class="code-line" id="line-4">&nbsp;&nbsp;&nbsp;&nbsp;quickSort(A, low, pivotIdx - 1)</div>
-            <div class="code-line" id="line-5">&nbsp;&nbsp;&nbsp;&nbsp;quickSort(A, pivotIdx + 1, high)</div>
-            <div class="code-line" id="line-6">procedure partition(A, low, high)</div>
-            <div class="code-line" id="line-7">&nbsp;&nbsp;pivot = A[high], i = low - 1</div>
-            <div class="code-line" id="line-8">&nbsp;&nbsp;for j = low to high - 1 do</div>
-            <div class="code-line" id="line-9">&nbsp;&nbsp;&nbsp;&nbsp;if A[j] < pivot then i++; swap(A[i], A[j])</div>
-            <div class="code-line" id="line-10">&nbsp;&nbsp;swap(A[i + 1], A[high]); return i + 1</div>
-        </div>
-    </div>
-
-</div>
-
-<div class="bottom">
-
-    <!-- Iteration Log -->
-    <div class="log">
-        <h2>Iteration Log</h2>
-        <div id="log">
-            No iterations yet.
-        </div>
-    </div>
-
-    <!-- Information -->
-    <div class="info">
-        <h2>Quick Sort</h2>
-        <h3>Statistics</h3>
-
-        <p>Array Size : <span id="arraySize">0</span></p>
-        <p>Comparisons : <span id="comparisons">0</span></p>
-        <p>Swaps : <span id="swaps">0</span></p>
-        <p>Passes : <span id="passes">0</span></p>
-        <p>Execution Time : <span id="executionTime">0 ms</span></p>
-
-        <hr style="margin:15px 0;">
-
-        <p>
-            Quick Sort follows the Divide and Conquer technique.
-            It selects a pivot element, partitions the array
-            around the pivot, and recursively sorts the
-            left and right partitions.
-        </p>
-
-        <br>
-
-        <p><b>Best Case :</b> O(n log n)</p>
-        <p><b>Average Case :</b> O(n log n)</p>
-        <p><b>Worst Case :</b> O(n²)</p>
-        <p><b>Space :</b> O(log n)</p>
-        <p><b>Stable :</b> No</p>
-    </div>
-
-</div>
-
-<script src="../js/quick.js"></script>
-
+    <script src="../js/quick.js"></script>
 </body>
 </html>
