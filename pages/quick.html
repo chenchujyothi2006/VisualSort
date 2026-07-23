@@ -17,11 +17,11 @@
             <h2>Controls</h2>
             <div class="control-group">
                 <label for="array-size">Array Size</label>
-                <input type="number" id="array-size" value="5" disabled>
+                <input type="number" id="array-size" value="5" min="2" max="20">
             </div>
             <div class="control-group">
                 <label for="array-input">Array Elements</label>
-                <input type="text" id="array-input" value="8 5 3 1 9">
+                <input type="text" id="array-input" value="10 80 30 90 40 50 70" placeholder="e.g. 10 80 30 90 40">
             </div>
             <div class="control-group">
                 <label for="speed">Animation Speed</label>
@@ -32,11 +32,11 @@
                 </select>
             </div>
             <div class="button-group">
-                <button onclick="generateRandomArray()">Random Array</button>
-                <button class="primary-btn" onclick="startSorting()">▶ Start Sorting</button>
-                <button onclick="pauseSorting()">⏸ Pause</button>
-                <button onclick="resumeSorting()">▶ Resume</button>
-                <button onclick="resetVisualizer()">🔄 Reset</button>
+                <button id="btn-random" onclick="generateRandomArray()">Random Array</button>
+                <button id="btn-start" class="primary-btn" onclick="startSorting()">▶ Start Sorting</button>
+                <button id="btn-pause" onclick="pauseSorting()">⏸ Pause</button>
+                <button id="btn-resume" onclick="resumeSorting()">▶ Resume</button>
+                <button id="btn-reset" onclick="resetVisualizer()">🔄 Reset</button>
             </div>
         </section>
 
@@ -46,6 +46,7 @@
                 <span class="legend-item"><span class="color-box unsorted"></span> Unsorted</span>
                 <span class="legend-item"><span class="color-box comparing"></span> Comparing</span>
                 <span class="legend-item"><span class="color-box pivot"></span> Pivot</span>
+                <span class="legend-item"><span class="color-box swapping"></span> Swapping</span>
                 <span class="legend-item"><span class="color-box sorted"></span> Sorted</span>
             </div>
             <div id="array-container" class="visualization-box"></div>
@@ -79,7 +80,7 @@
         <section class="right-sidebar">
             <section class="panel info-panel">
                 <h2>Algorithm Info</h2>
-                <p><strong>Quick Sort</strong> picks a pivot element and partitions array elements around it recursively.</p>
+                <p><strong>Quick Sort</strong> is a Divide-and-Conquer algorithm. It selects a 'pivot' element and partitions the array into sub-arrays around the pivot.</p>
                 <div class="complexity-grid">
                     <div><strong>Best Time:</strong> <span>O(N log N)</span></div>
                     <div><strong>Avg Time:</strong> <span>O(N log N)</span></div>
@@ -92,12 +93,10 @@
                 <h2>Algorithm Pseudocode</h2>
                 <div class="pseudocode">
                     <p id="line-1">procedure quickSort(A, low, high)</p>
-                    <p id="line-2">&nbsp;&nbsp;pivot = A[high], i = low - 1</p>
-                    <p id="line-3">&nbsp;&nbsp;for j = low to high - 1 do</p>
-                    <p id="line-4">&nbsp;&nbsp;&nbsp;&nbsp;if A[j] < pivot then</p>
-                    <p id="line-5">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;i++, swap A[i] and A[j]</p>
-                    <p id="line-6">&nbsp;&nbsp;swap A[i + 1] and A[high]</p>
-                    <p id="line-7">&nbsp;&nbsp;recurse left and right</p>
+                    <p id="line-2">&nbsp;&nbsp;if low < high then</p>
+                    <p id="line-3">&nbsp;&nbsp;&nbsp;&nbsp;pivot = partition(A, low, high)</p>
+                    <p id="line-4">&nbsp;&nbsp;&nbsp;&nbsp;quickSort(A, low, pivot - 1)</p>
+                    <p id="line-5">&nbsp;&nbsp;&nbsp;&nbsp;quickSort(A, pivot + 1, high)</p>
                 </div>
             </section>
         </section>
