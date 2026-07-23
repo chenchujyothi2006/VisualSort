@@ -1,269 +1,188 @@
-const barsContainer = document.getElementById("bars");
-const pointersContainer = document.getElementById("pointers-container");
-const tutor = document.getElementById("tutorText");
-const log = document.getElementById("log");
-const pseudocodeBox = document.getElementById("pseudocode");
-
-let arr = [];
-let animationSpeed = 500;
+let array = [];
+let isSorting = false;
 let isPaused = false;
+let delay = 400;
 
-let comparisons = 0;
-let merges = 0;
-let passes = 0;
-let startTime = 0;
-
-const MERGE_PSEUDOCODE = [
-    "function mergeSort(left, right):",
-    "  if left >= right return",
-    "  mid = (left + right) / 2",
-    "  mergeSort(left, mid)",
-    "  mergeSort(mid + 1, right)",
-    "  merge(left, mid, right)"
-];
+const arrayContainer = document.getElementById("array-container");
+const inputField = document.getElementById("array-input");
+const speedSelect = document.getElementById("speed");
+const logBox = document.getElementById("execution-log");
 
 function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-async function checkPause() {
-    while (isPaused) {
-        await sleep(100);
-    }
-}
-
-function pauseSorting() { isPaused = true; }
-function resumeSorting() { isPaused = false; }
-
-function loadPseudocode(lines) {
-    if (!pseudocodeBox) return;
-    pseudocodeBox.innerHTML = lines
-        .map((line, idx) => `<div class="code-line" id="line-${idx}">${line}</div>`)
-        .join("");
-}
-
-function highlightLine(lineIndex) {
-    if (!pseudocodeBox) return;
-    document.querySelectorAll(".code-line").forEach(el => el.classList.remove("active-line"));
-    const target = document.getElementById(`line-${lineIndex}`);
-    if (target) target.classList.add("active-line");
-}
-
-function renderPointers(pointersMap = {}) {
-    if (!pointersContainer) return;
-    pointersContainer.innerHTML = "";
-    arr.forEach((_, idx) => {
-        const slot = document.createElement("div");
-        slot.className = "pointer-slot";
-        if (pointersMap[idx]) {
-            const tag = document.createElement("span");
-            tag.className = `pointer-tag ${pointersMap[idx].type || ""}`;
-            tag.innerText = pointersMap[idx].label;
-            slot.appendChild(tag);
-        }
-        pointersContainer.appendChild(slot);
+    return new Promise((resolve) => {
+        const check = () => {
+            if (!isPaused) setTimeout(resolve, ms);
+            else setTimeout(check, 100);
+        };
+        check();
     });
 }
 
-function renderBars() {
-    barsContainer.innerHTML = "";
-    arr.forEach(value => {
+function addLog(msg, type = "info") {
+    if (!logBox) return;
+    const entry = document.createElement("p");
+    entry.className = `log-entry ${type}`;
+    entry.innerText = `> ${msg}`;
+    logBox.appendChild(entry);
+    logBox.scrollTop = logBox.scrollHeight;
+}
+
+function clearLogs() { if (logBox) logBox.innerHTML = ""; }
+
+function highlightCode(lineNum) {
+    document.querySelectorAll(".pseudocode p").forEach(p => p.classList.remove("active"));
+    const line = document.getElementById(`line-${lineNum}`);
+    if (line) line.classList.add("active");
+}
+
+function parseInput() {
+    const val = inputField ? inputField.value.trim() : "";
+    return val ? val.split(/[\s,]+/).map(Number).filter(n => !isNaN(n)) : [];
+}
+
+function renderArray(arr = array, pointers = {}) {
+    if (!arrayContainer) return;
+    arrayContainer.innerHTML = "";
+    const maxVal = Math.max(...arr, 1);
+
+    arr.forEach((value, index) => {
+        const wrapper = document.createElement("div");
+        wrapper.classList.add("bar-wrapper");
+
         const bar = document.createElement("div");
-        bar.className = "bar";
-        bar.style.height = value * 15 + "px";
-        bar.innerHTML = `<span>${value}</span>`;
-        barsContainer.appendChild(bar);
+        bar.classList.add("bar");
+        bar.style.height = `${Math.min((value / maxVal) * 75 + 15, 95)}%`;
+        bar.innerText = value;
+        wrapper.appendChild(bar);
+
+        let pointerText = [];
+        if (pointers.left === index) pointerText.push("L");
+        if (pointers.mid === index) pointerText.push("M");
+        if (pointers.right === index) pointerText.push("R");
+        if (pointers.k === index) pointerText.push("k");
+
+        if (pointerText.length > 0) {
+            const label = document.createElement("div");
+            label.classList.add("pointer-label");
+            label.innerText = pointerText.join(",");
+            wrapper.appendChild(label);
+        }
+
+        arrayContainer.appendChild(wrapper);
     });
-
-    renderPointers();
-    loadPseudocode(MERGE_PSEUDOCODE);
-
-    comparisons = 0;
-    merges = 0;
-    passes = 0;
-
-    document.getElementById("arraySize").innerText = arr.length;
-    document.getElementById("comparisons").innerText = 0;
-    document.getElementById("swaps").innerText = 0;
-    document.getElementById("passes").innerText = 0;
-    document.getElementById("executionTime").innerText = "0 ms";
 }
 
-function randomArray() {
-    let size = Number(document.getElementById("size").value) || 8;
-    arr = [];
-    for (let i = 0; i < size; i++) {
-        arr.push(Math.floor(Math.random() * 20) + 1);
-    }
-    document.getElementById("arrayInput").value = arr.join(" ");
-    renderBars();
-    tutor.innerHTML = "Random array generated.<br><br>Click <b>Start Sorting</b>.";
-    log.innerHTML = "Array Loaded Successfully.<br>";
-}
+async function merge(l, m, r) {
+    highlightCode(5);
+    addLog(`Merging sub-arrays [${l}..${m}] and [${m + 1}..${r}]`, "pass");
 
-function resetArray() {
-    barsContainer.innerHTML = "";
-    if (pointersContainer) pointersContainer.innerHTML = "";
-    if (pseudocodeBox) pseudocodeBox.innerHTML = "";
-    arr = [];
+    let n1 = m - l + 1;
+    let n2 = r - m;
 
-    document.getElementById("arrayInput").value = "";
-    tutor.innerHTML = "Enter elements or click <b>Random Array</b>, then click <b>Start Sorting</b>.";
-    log.innerHTML = "No iterations yet.";
+    let L = new Array(n1);
+    let R = new Array(n2);
 
-    comparisons = 0;
-    merges = 0;
-    passes = 0;
+    for (let i = 0; i < n1; i++) L[i] = array[l + i];
+    for (let j = 0; j < n2; j++) R[j] = array[m + 1 + j];
 
-    document.getElementById("arraySize").innerText = 0;
-    document.getElementById("comparisons").innerText = 0;
-    document.getElementById("swaps").innerText = 0;
-    document.getElementById("passes").innerText = 0;
-    document.getElementById("executionTime").innerText = "0 ms";
+    let i = 0, j = 0, k = l;
 
-    document.getElementById("startBtn").disabled = false;
-    isPaused = false;
-}
+    while (i < n1 && j < n2) {
+        if (!isSorting) return;
 
-async function merge(left, mid, right) {
-    await checkPause();
-    highlightLine(5);
-
-    let leftArray = arr.slice(left, mid + 1);
-    let rightArray = arr.slice(mid + 1, right + 1);
-
-    let i = 0, j = 0, k = left;
-    let bars = document.querySelectorAll(".bar");
-
-    tutor.innerHTML = `
-    <b>Merging Subarrays [${left} - ${right}]</b><br><br>
-    Left Part: ${leftArray.join(", ")} | Right Part: ${rightArray.join(", ")}
-    `;
-
-    log.innerHTML += `<b>Merging Index ${left} to ${right}</b><br>`;
-
-    while (i < leftArray.length && j < rightArray.length) {
-        await checkPause();
-
-        comparisons++;
-        document.getElementById("comparisons").innerText = comparisons;
-
-        renderPointers({ [k]: { label: "k", type: "pivot-tag" }, [left + i]: { label: "L" }, [mid + 1 + j]: { label: "R" } });
+        highlightCode(6);
+        renderArray(array, { left: l, mid: m, right: r, k: k });
+        let bars = document.querySelectorAll(".bar");
         bars[k].classList.add("comparing");
-        await sleep(animationSpeed);
+        addLog(`Comparing L[${i}] (${L[i]}) and R[${j}] (${R[j]})`);
+        await sleep(delay);
 
-        if (leftArray[i] <= rightArray[j]) {
-            arr[k] = leftArray[i];
+        highlightCode(7);
+        if (L[i] <= R[j]) {
+            array[k] = L[i];
             i++;
         } else {
-            arr[k] = rightArray[j];
+            array[k] = R[j];
             j++;
         }
 
-        bars[k].style.height = arr[k] * 15 + "px";
-        bars[k].innerHTML = `<span>${arr[k]}</span>`;
-        bars[k].classList.remove("comparing");
-        bars[k].classList.add("sorted");
-
+        renderArray(array, { left: l, right: r, k: k });
+        bars = document.querySelectorAll(".bar");
+        bars[k].classList.add("swapping");
+        await sleep(delay);
         k++;
-        await sleep(animationSpeed);
     }
 
-    while (i < leftArray.length) {
-        await checkPause();
-        arr[k] = leftArray[i];
-        bars[k].style.height = arr[k] * 15 + "px";
-        bars[k].innerHTML = `<span>${arr[k]}</span>`;
-        bars[k].classList.add("sorted");
-        i++; k++;
-        await sleep(animationSpeed);
+    while (i < n1) {
+        if (!isSorting) return;
+        array[k] = L[i];
+        renderArray(array, { k: k });
+        i++;
+        k++;
+        await sleep(delay);
     }
 
-    while (j < rightArray.length) {
-        await checkPause();
-        arr[k] = rightArray[j];
-        bars[k].style.height = arr[k] * 15 + "px";
-        bars[k].innerHTML = `<span>${arr[k]}</span>`;
-        bars[k].classList.add("sorted");
-        j++; k++;
-        await sleep(animationSpeed);
+    while (j < n2) {
+        if (!isSorting) return;
+        array[k] = R[j];
+        renderArray(array, { k: k });
+        j++;
+        k++;
+        await sleep(delay);
     }
-
-    merges++;
-    document.getElementById("swaps").innerText = merges;
-    passes++;
-    document.getElementById("passes").innerText = passes;
 }
 
-async function mergeSort(left, right) {
-    highlightLine(0);
-    if (left >= right) {
-        highlightLine(1);
-        return;
-    }
+async function mergeSortHelper(l, r) {
+    if (l >= r) return;
 
-    await checkPause();
-    let mid = Math.floor((left + right) / 2);
-    highlightLine(2);
+    highlightCode(1);
+    let m = l + Math.floor((r - l) / 2);
 
-    renderPointers({ [left]: { label: "L" }, [mid]: { label: "M", type: "pivot-tag" }, [right]: { label: "R" } });
+    highlightCode(2);
+    addLog(`Split array at index ${m}`, "highlight");
+    renderArray(array, { left: l, mid: m, right: r });
+    await sleep(delay);
 
-    tutor.innerHTML = `<b>Divide Phase</b><br><br>Dividing index ${left} to ${right} at Mid ${mid}`;
-    await sleep(animationSpeed);
+    highlightCode(3);
+    await mergeSortHelper(l, m);
 
-    highlightLine(3);
-    await mergeSort(left, mid);
+    highlightCode(4);
+    await mergeSortHelper(m + 1, r);
 
-    highlightLine(4);
-    await mergeSort(mid + 1, right);
-
-    await merge(left, mid, right);
+    await merge(l, m, r);
 }
 
-async function startSorting() {
-    const inputVal = document.getElementById("arrayInput").value.trim();
-    if (inputVal.length > 0) {
-        arr = inputVal.split(/\s+/).map(Number);
-    }
+async function startMergeSort() {
+    isSorting = true;
+    isPaused = false;
+    clearLogs();
+    addLog("Starting Merge Sort...", "highlight");
 
-    if (arr.length === 0 || arr.some(isNaN)) {
-        tutor.innerHTML = "<b style='color: #ff6b6b;'>Please enter valid numbers or click Random Array.</b>";
-        return;
-    }
+    await mergeSortHelper(0, array.length - 1);
 
-    renderBars();
-    document.getElementById("startBtn").disabled = true;
-    animationSpeed = Number(document.getElementById("speed").value);
+    renderArray(array);
+    document.querySelectorAll(".bar").forEach(b => b.classList.add("sorted"));
+    addLog("Array sorted successfully!", "highlight");
+    highlightCode(0);
+    isSorting = false;
+}
 
-    comparisons = 0;
-    merges = 0;
-    passes = 0;
-    startTime = performance.now();
-    log.innerHTML = "";
+function startSorting() { if (!isSorting) { array = parseInput(); startMergeSort(); } }
+function pauseSorting() { isPaused = true; }
+function resumeSorting() { isPaused = false; }
+function resetVisualizer() { isSorting = false; isPaused = false; array = parseInput(); renderArray(array); clearLogs(); highlightCode(0); }
+function generateRandomArray() {
+    array = Array.from({ length: 5 }, () => Math.floor(Math.random() * 50) + 1);
+    inputField.value = array.join(" ");
+    renderArray(array);
+    clearLogs();
+}
 
-    await mergeSort(0, arr.length - 1);
-
-    let bars = document.querySelectorAll(".bar");
-    bars.forEach(bar => {
-        bar.classList.remove("comparing", "swapping");
-        bar.classList.add("sorted");
+if (speedSelect) {
+    speedSelect.addEventListener("change", (e) => {
+        const val = e.target.value.toLowerCase();
+        delay = val === "slow" ? 800 : val === "fast" ? 150 : 400;
     });
-
-    renderPointers();
-    highlightLine(-1);
-
-    let endTime = performance.now();
-    let execTime = Math.round(endTime - startTime);
-    document.getElementById("executionTime").innerText = execTime + " ms";
-
-    tutor.innerHTML = `
-    <h3>🎉 Merge Sort Completed</h3><br>
-    <b>Total Comparisons :</b> ${comparisons}<br>
-    <b>Total Merge Operations :</b> ${merges}<br>
-    <b>Total Merge Passes :</b> ${passes}<br>
-    <b>Execution Time :</b> ${execTime} ms
-    `;
-
-    log.innerHTML += `<hr><b>Merge Sort Completed Successfully.</b>`;
-    document.getElementById("startBtn").disabled = false;
 }
+
+document.addEventListener("DOMContentLoaded", () => { array = parseInput(); renderArray(array); });
