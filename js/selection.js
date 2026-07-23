@@ -1,258 +1,163 @@
-const barsContainer = document.getElementById("bars");
-const pointersContainer = document.getElementById("pointers-container");
-const tutor = document.getElementById("tutorText");
-const log = document.getElementById("log");
-const pseudocodeBox = document.getElementById("pseudocode");
-
-let arr = [];
-let animationSpeed = 500;
+let array = [];
+let isSorting = false;
 let isPaused = false;
+let delay = 400;
 
-let comparisons = 0;
-let swaps = 0;
-let passes = 0;
-let startTime = 0;
-
-const SELECTION_PSEUDOCODE = [
-    "for i = 0 to N - 2 do",
-    "  min_idx = i",
-    "  for j = i + 1 to N - 1 do",
-    "    if arr[j] < arr[min_idx] then",
-    "      min_idx = j",
-    "  if min_idx != i then",
-    "    swap(arr[i], arr[min_idx])"
-];
+const arrayContainer = document.getElementById("array-container");
+const inputField = document.getElementById("array-input");
+const speedSelect = document.getElementById("speed");
+const logBox = document.getElementById("execution-log");
 
 function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => {
+        const check = () => {
+            if (!isPaused) setTimeout(resolve, ms);
+            else setTimeout(check, 100);
+        };
+        check();
+    });
 }
 
-async function checkPause() {
-    while (isPaused) {
-        await sleep(100);
+function addLog(msg, type = "info") {
+    if (!logBox) return;
+    const entry = document.createElement("p");
+    entry.className = `log-entry ${type}`;
+    entry.innerText = `> ${msg}`;
+    logBox.appendChild(entry);
+    logBox.scrollTop = logBox.scrollHeight;
+}
+
+function clearLogs() { if (logBox) logBox.innerHTML = ""; }
+
+function highlightCode(lineNum) {
+    document.querySelectorAll(".pseudocode p").forEach(p => p.classList.remove("active"));
+    const line = document.getElementById(`line-${lineNum}`);
+    if (line) line.classList.add("active");
+}
+
+function parseInput() {
+    const val = inputField ? inputField.value.trim() : "";
+    return val ? val.split(/[\s,]+/).map(Number).filter(n => !isNaN(n)) : [];
+}
+
+function renderArray(arr = array, pointers = {}) {
+    if (!arrayContainer) return;
+    arrayContainer.innerHTML = "";
+    const maxVal = Math.max(...arr, 1);
+
+    arr.forEach((value, index) => {
+        const wrapper = document.createElement("div");
+        wrapper.classList.add("bar-wrapper");
+
+        const bar = document.createElement("div");
+        bar.classList.add("bar");
+        bar.style.height = `${Math.min((value / maxVal) * 75 + 15, 95)}%`;
+        bar.innerText = value;
+
+        if (index === pointers.minIdx) bar.classList.add("pivot");
+        wrapper.appendChild(bar);
+
+        let pointerText = [];
+        if (pointers.i === index) pointerText.push("i");
+        if (pointers.j === index) pointerText.push("j");
+        if (pointers.minIdx === index) pointerText.push("min");
+
+        if (pointerText.length > 0) {
+            const label = document.createElement("div");
+            label.classList.add("pointer-label");
+            label.innerText = pointerText.join(",");
+            wrapper.appendChild(label);
+        }
+
+        arrayContainer.appendChild(wrapper);
+    });
+}
+
+async function selectionSort() {
+    isSorting = true;
+    isPaused = false;
+    clearLogs();
+    addLog("Starting Selection Sort...", "highlight");
+
+    let n = array.length;
+    highlightCode(1);
+    await sleep(delay);
+
+    for (let i = 0; i < n - 1; i++) {
+        if (!isSorting) return;
+
+        addLog(`Pass ${i + 1}: Finding minimum element from index ${i}`, "pass");
+        highlightCode(2);
+        await sleep(delay);
+
+        let minIdx = i;
+        highlightCode(3);
+        renderArray(array, { i: i, minIdx: minIdx });
+        addLog(`Set initial minimum index to ${minIdx} (Value: ${array[minIdx]})`);
+        await sleep(delay);
+
+        for (let j = i + 1; j < n; j++) {
+            if (!isSorting) return;
+
+            highlightCode(4);
+            renderArray(array, { i: i, j: j, minIdx: minIdx });
+            let bars = document.querySelectorAll(".bar");
+            if (bars[j]) bars[j].classList.add("comparing");
+            addLog(`Comparing index ${j} (${array[j]}) with current min (${array[minIdx]})`);
+            await sleep(delay);
+
+            highlightCode(5);
+            if (array[j] < array[minIdx]) {
+                minIdx = j;
+                addLog(`Found smaller value! New min_idx = ${minIdx} (${array[minIdx]})`, "swap");
+                renderArray(array, { i: i, j: j, minIdx: minIdx });
+                await sleep(delay);
+            }
+        }
+
+        highlightCode(6);
+        if (minIdx !== i) {
+            addLog(`Swapping element at index ${i} (${array[i]}) with min element at index ${minIdx} (${array[minIdx]})`, "swap");
+            let temp = array[i];
+            array[i] = array[minIdx];
+            array[minIdx] = temp;
+
+            renderArray(array, { i: i, minIdx: minIdx });
+            let bars = document.querySelectorAll(".bar");
+            if (bars[i]) bars[i].classList.add("swapping");
+            if (bars[minIdx]) bars[minIdx].classList.add("swapping");
+            await sleep(delay);
+        } else {
+            addLog(`Element at index ${i} is already the minimum. No swap needed.`);
+        }
+
+        renderArray(array, { i: i });
+        await sleep(delay);
     }
+
+    renderArray(array);
+    document.querySelectorAll(".bar").forEach(b => b.classList.add("sorted"));
+    addLog("Array sorted successfully!", "highlight");
+    highlightCode(0);
+    isSorting = false;
 }
 
+function startSorting() { if (!isSorting) { array = parseInput(); selectionSort(); } }
 function pauseSorting() { isPaused = true; }
 function resumeSorting() { isPaused = false; }
-
-function loadPseudocode(lines) {
-    if (!pseudocodeBox) return;
-    pseudocodeBox.innerHTML = lines
-        .map((line, idx) => `<div class="code-line" id="line-${idx}">${line}</div>`)
-        .join("");
+function resetVisualizer() { isSorting = false; isPaused = false; array = parseInput(); renderArray(array); clearLogs(); highlightCode(0); }
+function generateRandomArray() {
+    array = Array.from({ length: 5 }, () => Math.floor(Math.random() * 50) + 1);
+    inputField.value = array.join(" ");
+    renderArray(array);
+    clearLogs();
 }
 
-function highlightLine(lineIndex) {
-    if (!pseudocodeBox) return;
-    document.querySelectorAll(".code-line").forEach(el => el.classList.remove("active-line"));
-    const target = document.getElementById(`line-${lineIndex}`);
-    if (target) target.classList.add("active-line");
-}
-
-function renderPointers(pointersMap = {}) {
-    if (!pointersContainer) return;
-    pointersContainer.innerHTML = "";
-    arr.forEach((_, idx) => {
-        const slot = document.createElement("div");
-        slot.className = "pointer-slot";
-        if (pointersMap[idx]) {
-            const tag = document.createElement("span");
-            tag.className = `pointer-tag ${pointersMap[idx].type || ""}`;
-            tag.innerText = pointersMap[idx].label;
-            slot.appendChild(tag);
-        }
-        pointersContainer.appendChild(slot);
+if (speedSelect) {
+    speedSelect.addEventListener("change", (e) => {
+        const val = e.target.value.toLowerCase();
+        delay = val === "slow" ? 800 : val === "fast" ? 150 : 400;
     });
 }
 
-function renderBars() {
-    barsContainer.innerHTML = "";
-    arr.forEach(value => {
-        const bar = document.createElement("div");
-        bar.className = "bar";
-        bar.style.height = value * 15 + "px";
-        bar.innerHTML = `<span>${value}</span>`;
-        barsContainer.appendChild(bar);
-    });
-
-    renderPointers();
-    loadPseudocode(SELECTION_PSEUDOCODE);
-
-    comparisons = 0;
-    swaps = 0;
-    passes = 0;
-
-    document.getElementById("arraySize").innerText = arr.length;
-    document.getElementById("comparisons").innerText = 0;
-    document.getElementById("swaps").innerText = 0;
-    document.getElementById("passes").innerText = 0;
-    document.getElementById("executionTime").innerText = "0 ms";
-}
-
-function randomArray() {
-    let size = Number(document.getElementById("size").value) || 8;
-    arr = [];
-    for (let i = 0; i < size; i++) {
-        arr.push(Math.floor(Math.random() * 20) + 1);
-    }
-    document.getElementById("arrayInput").value = arr.join(" ");
-    renderBars();
-    tutor.innerHTML = "Random array generated.<br><br>Click <b>Start Sorting</b>.";
-    log.innerHTML = "Array Loaded Successfully.<br>";
-}
-
-function resetArray() {
-    barsContainer.innerHTML = "";
-    if (pointersContainer) pointersContainer.innerHTML = "";
-    if (pseudocodeBox) pseudocodeBox.innerHTML = "";
-    arr = [];
-
-    document.getElementById("arrayInput").value = "";
-    tutor.innerHTML = "Enter elements or click <b>Random Array</b>, then click <b>Start Sorting</b>.";
-    log.innerHTML = "No iterations yet.";
-
-    comparisons = 0;
-    swaps = 0;
-    passes = 0;
-
-    document.getElementById("arraySize").innerText = 0;
-    document.getElementById("comparisons").innerText = 0;
-    document.getElementById("swaps").innerText = 0;
-    document.getElementById("passes").innerText = 0;
-    document.getElementById("executionTime").innerText = "0 ms";
-
-    document.getElementById("startBtn").disabled = false;
-    isPaused = false;
-}
-
-async function startSorting() {
-    const inputVal = document.getElementById("arrayInput").value.trim();
-    if (inputVal.length > 0) {
-        arr = inputVal.split(/\s+/).map(Number);
-    }
-
-    if (arr.length === 0 || arr.some(isNaN)) {
-        tutor.innerHTML = "<b style='color: #ff6b6b;'>Please enter valid numbers or click Random Array.</b>";
-        return;
-    }
-
-    renderBars();
-    document.getElementById("startBtn").disabled = true;
-    animationSpeed = Number(document.getElementById("speed").value);
-
-    comparisons = 0;
-    swaps = 0;
-    passes = 0;
-    startTime = performance.now();
-    log.innerHTML = "";
-
-    let bars = document.querySelectorAll(".bar");
-
-    for (let i = 0; i < arr.length - 1; i++) {
-        await checkPause();
-        highlightLine(0);
-
-        let min = i;
-        highlightLine(1);
-
-        log.innerHTML += `<b>PASS ${i + 1}</b><br><br>`;
-        bars[min].classList.add("comparing");
-
-        renderPointers({ [i]: { label: "i" }, [min]: { label: "min", type: "pivot-tag" } });
-
-        tutor.innerHTML = `
-        <b>Pass ${i + 1}</b><br><br>
-        Current Minimum: <b>${arr[min]}</b><br><br>
-        Scanning for smaller elements.
-        `;
-
-        for (let j = i + 1; j < arr.length; j++) {
-            await checkPause();
-            highlightLine(2);
-
-            comparisons++;
-            document.getElementById("comparisons").innerText = comparisons;
-
-            bars[j].classList.add("comparing");
-            renderPointers({ [i]: { label: "i" }, [min]: { label: "min", type: "pivot-tag" }, [j]: { label: "j" } });
-
-            tutor.innerHTML = `
-            <b>Comparing</b><br><br>
-            Current Minimum: <b>${arr[min]}</b><br><br>
-            Checking element <b>${arr[j]}</b>.
-            `;
-
-            log.innerHTML += `Compare ${arr[j]} and ${arr[min]}<br>`;
-            await sleep(animationSpeed);
-
-            highlightLine(3);
-            if (arr[j] < arr[min]) {
-                bars[min].classList.remove("comparing", "swapping");
-                min = j;
-                highlightLine(4);
-
-                bars[min].classList.add("comparing", "swapping");
-                renderPointers({ [i]: { label: "i" }, [min]: { label: "min", type: "pivot-tag" } });
-
-                tutor.innerHTML = `<b>New Minimum Found: ${arr[min]}</b>`;
-                await sleep(animationSpeed);
-            }
-
-            if (j !== min) {
-                bars[j].classList.remove("comparing");
-            }
-        }
-
-        highlightLine(5);
-        if (min !== i) {
-            highlightLine(6);
-            tutor.innerHTML = `<b>Swapping:</b> ${arr[i]} with minimum ${arr[min]}.`;
-
-            bars[i].classList.add("swapping");
-            bars[min].classList.add("swapping");
-
-            await sleep(animationSpeed);
-
-            [arr[i], arr[min]] = [arr[min], arr[i]];
-            swaps++;
-            document.getElementById("swaps").innerText = swaps;
-
-            bars[i].style.height = arr[i] * 15 + "px";
-            bars[i].innerHTML = `<span>${arr[i]}</span>`;
-            bars[min].style.height = arr[min] * 15 + "px";
-            bars[min].innerHTML = `<span>${arr[min]}</span>`;
-
-            log.innerHTML += `Swap ${arr[min]} and ${arr[i]}<br>`;
-            await sleep(animationSpeed);
-
-            bars[min].classList.remove("swapping");
-        }
-
-        passes++;
-        document.getElementById("passes").innerText = passes;
-
-        bars[i].classList.remove("comparing", "swapping");
-        bars[i].classList.add("sorted");
-        log.innerHTML += `Minimum element placed at index ${i}.<br><hr>`;
-    }
-
-    bars[arr.length - 1].classList.add("sorted");
-    renderPointers();
-    highlightLine(-1);
-
-    let endTime = performance.now();
-    let execTime = Math.round(endTime - startTime);
-    document.getElementById("executionTime").innerText = execTime + " ms";
-
-    tutor.innerHTML = `
-    <h3>🎉 Selection Sort Completed</h3><br>
-    <b>Total Comparisons :</b> ${comparisons}<br>
-    <b>Total Swaps :</b> ${swaps}<br>
-    <b>Total Passes :</b> ${passes}<br>
-    <b>Execution Time :</b> ${execTime} ms
-    `;
-
-    log.innerHTML += `<br><b>Sorting Completed Successfully.</b>`;
-    document.getElementById("startBtn").disabled = false;
-}
+document.addEventListener("DOMContentLoaded", () => { array = parseInput(); renderArray(array); });
