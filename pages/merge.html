@@ -17,11 +17,11 @@
             <h2>Controls</h2>
             <div class="control-group">
                 <label for="array-size">Array Size</label>
-                <input type="number" id="array-size" value="5" disabled>
+                <input type="number" id="array-size" value="5" min="2" max="20">
             </div>
             <div class="control-group">
                 <label for="array-input">Array Elements</label>
-                <input type="text" id="array-input" value="8 5 3 1 9">
+                <input type="text" id="array-input" value="38 27 43 3 9 82 10" placeholder="e.g. 38 27 43 3 9">
             </div>
             <div class="control-group">
                 <label for="speed">Animation Speed</label>
@@ -32,11 +32,11 @@
                 </select>
             </div>
             <div class="button-group">
-                <button onclick="generateRandomArray()">Random Array</button>
-                <button class="primary-btn" onclick="startSorting()">▶ Start Sorting</button>
-                <button onclick="pauseSorting()">⏸ Pause</button>
-                <button onclick="resumeSorting()">▶ Resume</button>
-                <button onclick="resetVisualizer()">🔄 Reset</button>
+                <button id="btn-random" onclick="generateRandomArray()">Random Array</button>
+                <button id="btn-start" class="primary-btn" onclick="startSorting()">▶ Start Sorting</button>
+                <button id="btn-pause" onclick="pauseSorting()">⏸ Pause</button>
+                <button id="btn-resume" onclick="resumeSorting()">▶ Resume</button>
+                <button id="btn-reset" onclick="resetVisualizer()">🔄 Reset</button>
             </div>
         </section>
 
@@ -44,8 +44,8 @@
             <h2>Visualization</h2>
             <div class="legend">
                 <span class="legend-item"><span class="color-box unsorted"></span> Unsorted</span>
-                <span class="legend-item"><span class="color-box comparing"></span> Sub-arrays</span>
-                <span class="legend-item"><span class="color-box swapping"></span> Merging</span>
+                <span class="legend-item"><span class="color-box comparing"></span> Comparing</span>
+                <span class="legend-item"><span class="color-box swapping"></span> Writing Back</span>
                 <span class="legend-item"><span class="color-box sorted"></span> Sorted</span>
             </div>
             <div id="array-container" class="visualization-box"></div>
@@ -62,7 +62,7 @@
                         <div id="stat-comparisons" class="value">0</div>
                     </div>
                     <div class="metric-card">
-                        <div class="label">Writes</div>
+                        <div class="label">Array Writes</div>
                         <div id="stat-swaps" class="value">0</div>
                     </div>
                 </div>
@@ -79,7 +79,7 @@
         <section class="right-sidebar">
             <section class="panel info-panel">
                 <h2>Algorithm Info</h2>
-                <p><strong>Merge Sort</strong> divides the array in half, recursively sorts both halves, and then merges them back together.</p>
+                <p><strong>Merge Sort</strong> divides the array into halves, recursively sorts them, and merges the sorted halves back together.</p>
                 <div class="complexity-grid">
                     <div><strong>Best Time:</strong> <span>O(N log N)</span></div>
                     <div><strong>Avg Time:</strong> <span>O(N log N)</span></div>
@@ -92,12 +92,11 @@
                 <h2>Algorithm Pseudocode</h2>
                 <div class="pseudocode">
                     <p id="line-1">procedure mergeSort(A, left, right)</p>
-                    <p id="line-2">&nbsp;&nbsp;mid = (left + right) / 2</p>
-                    <p id="line-3">&nbsp;&nbsp;mergeSort(left, mid)</p>
-                    <p id="line-4">&nbsp;&nbsp;mergeSort(mid + 1, right)</p>
-                    <p id="line-5">&nbsp;&nbsp;merge(A, left, mid, right)</p>
-                    <p id="line-6">&nbsp;&nbsp;&nbsp;&nbsp;compare L[i] and R[j]</p>
-                    <p id="line-7">&nbsp;&nbsp;&nbsp;&nbsp;copy smaller back to A</p>
+                    <p id="line-2">&nbsp;&nbsp;if left >= right return</p>
+                    <p id="line-3">&nbsp;&nbsp;mid = left + (right - left) / 2</p>
+                    <p id="line-4">&nbsp;&nbsp;mergeSort(A, left, mid)</p>
+                    <p id="line-5">&nbsp;&nbsp;mergeSort(A, mid + 1, right)</p>
+                    <p id="line-6">&nbsp;&nbsp;merge(A, left, mid, right)</p>
                 </div>
             </section>
         </section>
