@@ -46,7 +46,7 @@
             </div>
         </section>
 
-        <!-- Visualization Display Area -->
+        <!-- Visualization Panel -->
         <section class="panel visualization-panel">
             <h2>Visualization</h2>
             
@@ -58,20 +58,41 @@
             </div>
 
             <div id="array-container" class="visualization-box"></div>
+
+            <!-- Iteration Log -->
+            <div class="log-container">
+                <h3>Iteration Log</h3>
+                <div id="execution-log" class="log-box">
+                    <p class="log-entry">Click "Start Sorting" to view execution steps...</p>
+                </div>
+            </div>
         </section>
 
-        <!-- Pseudocode Sidebar -->
-        <section class="panel pseudocode-panel">
-            <h2>Algorithm Pseudocode</h2>
-            <div class="pseudocode">
-                <p id="line-1">procedure bubbleSort(A : list)</p>
-                <p id="line-2">&nbsp;&nbsp;n = length(A)</p>
-                <p id="line-3">&nbsp;&nbsp;for i = 0 to n - 1 do</p>
-                <p id="line-4">&nbsp;&nbsp;&nbsp;&nbsp;for j = 0 to n - i - 2 do</p>
-                <p id="line-5">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if A[j] > A[j + 1] then</p>
-                <p id="line-6">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;swap(A[j], A[j + 1])</p>
-                <p id="line-7">&nbsp;&nbsp;mark A[n - i - 1] as sorted</p>
-            </div>
+        <!-- Right Side: Information & Pseudocode -->
+        <section class="right-sidebar">
+            <section class="panel info-panel">
+                <h2>Algorithm Info</h2>
+                <p><strong>Bubble Sort</strong> repeatedly steps through the list, compares adjacent elements, and swaps them if they are in the wrong order.</p>
+                <div class="complexity-grid">
+                    <div><strong>Best Time:</strong> <span>O(N)</span></div>
+                    <div><strong>Avg Time:</strong> <span>O(N²)</span></div>
+                    <div><strong>Worst Time:</strong> <span>O(N²)</span></div>
+                    <div><strong>Space:</strong> <span>O(1)</span></div>
+                </div>
+            </section>
+
+            <section class="panel pseudocode-panel">
+                <h2>Algorithm Pseudocode</h2>
+                <div class="pseudocode">
+                    <p id="line-1">procedure bubbleSort(A : list)</p>
+                    <p id="line-2">&nbsp;&nbsp;n = length(A)</p>
+                    <p id="line-3">&nbsp;&nbsp;for i = 0 to n - 1 do</p>
+                    <p id="line-4">&nbsp;&nbsp;&nbsp;&nbsp;for j = 0 to n - i - 2 do</p>
+                    <p id="line-5">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if A[j] > A[j + 1] then</p>
+                    <p id="line-6">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;swap(A[j], A[j + 1])</p>
+                    <p id="line-7">&nbsp;&nbsp;mark A[n - i - 1] as sorted</p>
+                </div>
+            </section>
         </section>
     </main>
 
