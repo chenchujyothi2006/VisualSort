@@ -1,96 +1,113 @@
 /**
- * VisualSort - Bubble Sort Engine
+ * VisualSort - Bubble Sort Engine (with Pointer Movements & Logs)
  */
 
-// State tracking variables
 let array = [];
 let isSorting = false;
 let isPaused = false;
-let delay = 400; // Default medium speed in milliseconds
+let delay = 400;
 
-// DOM Elements
 const arrayContainer = document.getElementById("array-container");
 const inputField = document.getElementById("array-input");
 const sizeInput = document.getElementById("array-size");
 const speedSelect = document.getElementById("speed");
+const logBox = document.getElementById("execution-log");
 
-// Helper delay timer supporting dynamic Pause & Resume operations
 function sleep(ms) {
     return new Promise((resolve) => {
         const check = () => {
-            if (!isPaused) {
-                setTimeout(resolve, ms);
-            } else {
-                setTimeout(check, 100);
-            }
+            if (!isPaused) setTimeout(resolve, ms);
+            else setTimeout(check, 100);
         };
         check();
     });
 }
 
-// 1. Pseudocode Line Highlighting Helper
+function addLog(message, type = "info") {
+    if (!logBox) return;
+    const entry = document.createElement("p");
+    entry.className = `log-entry ${type}`;
+    entry.innerText = `> ${message}`;
+    logBox.appendChild(entry);
+    logBox.scrollTop = logBox.scrollHeight;
+}
+
+function clearLogs() {
+    if (logBox) logBox.innerHTML = "";
+}
+
 function highlightCode(lineNum) {
     const lines = document.querySelectorAll(".pseudocode p");
     lines.forEach((line) => line.classList.remove("active"));
-
     if (lineNum > 0) {
         const activeLine = document.getElementById(`line-${lineNum}`);
         if (activeLine) activeLine.classList.add("active");
     }
 }
 
-// 2. Parse Space/Comma Separated Input Array
 function parseInput() {
     if (!inputField) return [];
     const rawVal = inputField.value.trim();
     if (!rawVal) return [];
-
-    return rawVal
-        .split(/[\s,]+/)
-        .map(Number)
-        .filter((n) => !isNaN(n));
+    return rawVal.split(/[\s,]+/).map(Number).filter((n) => !isNaN(n));
 }
 
-// 3. Render Array Bars dynamically inside the Visualization Box
-function renderArray(arr = array) {
+// Render Bars with Pointer Badge Indicators
+function renderArray(arr = array, pointers = {}) {
     if (!arrayContainer) return;
     arrayContainer.innerHTML = "";
 
     const maxVal = Math.max(...arr, 1);
 
-    arr.forEach((value) => {
+    arr.forEach((value, index) => {
+        const wrapper = document.createElement("div");
+        wrapper.classList.add("bar-wrapper");
+
         const bar = document.createElement("div");
         bar.classList.add("bar");
+        bar.setAttribute("data-index", index);
 
-        // Scale bar height dynamically between 15% and 90%
         const heightPercent = Math.min((value / maxVal) * 75 + 15, 95);
         bar.style.height = `${heightPercent}%`;
         bar.innerText = value;
 
-        arrayContainer.appendChild(bar);
+        wrapper.appendChild(bar);
+
+        // Pointer indicators (Feature #5)
+        let pointerText = [];
+        if (pointers.i === index) pointerText.push("i");
+        if (pointers.j === index) pointerText.push("j");
+        if (pointers.jNext === index) pointerText.push("j+1");
+
+        if (pointerText.length > 0) {
+            const label = document.createElement("div");
+            label.classList.add("pointer-label");
+            label.innerText = pointerText.join(",");
+            wrapper.appendChild(label);
+        }
+
+        arrayContainer.appendChild(wrapper);
     });
 }
 
-// 4. Generate Random Array
 function generateRandomArray() {
     if (isSorting) return;
-    const size = 5;
-    const randomArr = Array.from({ length: size }, () => Math.floor(Math.random() * 50) + 1);
-    
+    const randomArr = Array.from({ length: 5 }, () => Math.floor(Math.random() * 50) + 1);
     inputField.value = randomArr.join(" ");
     array = randomArr;
     if (sizeInput) sizeInput.value = array.length;
     renderArray(array);
+    clearLogs();
+    addLog("Generated random array: [" + array.join(", ") + "]");
 }
 
-// 5. Bubble Sort Core Visualization
 async function bubbleSort() {
     isSorting = true;
     isPaused = false;
+    clearLogs();
+    addLog("Starting Bubble Sort...", "highlight");
 
-    let bars = document.querySelectorAll(".bar");
     let n = array.length;
-
     highlightCode(1);
     await sleep(delay);
 
@@ -99,18 +116,20 @@ async function bubbleSort() {
 
     for (let i = 0; i < n - 1; i++) {
         if (!isSorting) return;
-
+        addLog(`Pass ${i + 1}: Outer loop (i = ${i})`, "pass");
         highlightCode(3);
         await sleep(delay);
 
         for (let j = 0; j < n - i - 1; j++) {
             if (!isSorting) return;
 
-            highlightCode(4);
+            renderArray(array, { i: i, j: j, jNext: j + 1 });
+            let bars = document.querySelectorAll(".bar");
 
-            // Set state to Comparing (Yellow)
+            highlightCode(4);
             bars[j].classList.add("comparing");
             bars[j + 1].classList.add("comparing");
+            addLog(`Comparing index ${j} (${array[j]}) & ${j + 1} (${array[j + 1]})`);
             await sleep(delay);
 
             highlightCode(5);
@@ -118,44 +137,39 @@ async function bubbleSort() {
 
             if (array[j] > array[j + 1]) {
                 highlightCode(6);
-
-                // Set state to Swapping (Red)
                 bars[j].classList.remove("comparing");
                 bars[j + 1].classList.remove("comparing");
                 bars[j].classList.add("swapping");
                 bars[j + 1].classList.add("swapping");
+                addLog(`Swapping ${array[j]} and ${array[j + 1]}`, "swap");
                 await sleep(delay);
 
-                // Swap in-memory state
                 let temp = array[j];
                 array[j] = array[j + 1];
                 array[j + 1] = temp;
 
-                // Re-render DOM elements & maintain colors
-                renderArray(array);
+                renderArray(array, { i: i, j: j, jNext: j + 1 });
                 bars = document.querySelectorAll(".bar");
                 bars[j].classList.add("swapping");
                 bars[j + 1].classList.add("swapping");
                 await sleep(delay);
             }
-
-            // Clear operational colors back to default
-            bars[j].classList.remove("comparing", "swapping");
-            bars[j + 1].classList.remove("comparing", "swapping");
         }
 
         highlightCode(7);
-        // Mark current element as Sorted (Green)
+        renderArray(array, { i: i });
+        let bars = document.querySelectorAll(".bar");
         bars[n - i - 1].classList.add("sorted");
+        addLog(`Element ${array[n - i - 1]} is now sorted!`, "sorted");
     }
 
-    // Mark remaining first element as sorted
-    if (bars[0]) bars[0].classList.add("sorted");
+    renderArray(array);
+    document.querySelectorAll(".bar").forEach(b => b.classList.add("sorted"));
+    addLog("Array sorted successfully!", "highlight");
     highlightCode(0);
     isSorting = false;
 }
 
-// 6. Interactive Controls Listener Attachments
 if (speedSelect) {
     speedSelect.addEventListener("change", (e) => {
         const val = e.target.value.toLowerCase();
@@ -171,15 +185,13 @@ if (inputField) {
             array = parseInput();
             if (sizeInput) sizeInput.value = array.length;
             renderArray(array);
+            clearLogs();
         }
     });
 }
 
 function startSorting() {
-    if (isSorting && isPaused) {
-        isPaused = false;
-        return;
-    }
+    if (isSorting && isPaused) { isPaused = false; return; }
     if (!isSorting) {
         array = parseInput();
         if (array.length === 0) return;
@@ -187,23 +199,17 @@ function startSorting() {
     }
 }
 
-function pauseSorting() {
-    if (isSorting) isPaused = true;
-}
-
-function resumeSorting() {
-    if (isSorting && isPaused) isPaused = false;
-}
-
+function pauseSorting() { if (isSorting) isPaused = true; }
+function resumeSorting() { if (isSorting && isPaused) isPaused = false; }
 function resetVisualizer() {
     isSorting = false;
     isPaused = false;
     array = parseInput();
     renderArray(array);
     highlightCode(0);
+    clearLogs();
 }
 
-// Initial rendering on page launch
 document.addEventListener("DOMContentLoaded", () => {
     array = parseInput();
     renderArray(array);
