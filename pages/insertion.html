@@ -17,11 +17,11 @@
             <h2>Controls</h2>
             <div class="control-group">
                 <label for="array-size">Array Size</label>
-                <input type="number" id="array-size" value="5" disabled>
+                <input type="number" id="array-size" value="5" min="2" max="20">
             </div>
             <div class="control-group">
                 <label for="array-input">Array Elements</label>
-                <input type="text" id="array-input" value="8 5 3 1 9">
+                <input type="text" id="array-input" value="12 11 13 5 6" placeholder="e.g. 12 11 13 5 6">
             </div>
             <div class="control-group">
                 <label for="speed">Animation Speed</label>
@@ -32,11 +32,11 @@
                 </select>
             </div>
             <div class="button-group">
-                <button onclick="generateRandomArray()">Random Array</button>
-                <button class="primary-btn" onclick="startSorting()">▶ Start Sorting</button>
-                <button onclick="pauseSorting()">⏸ Pause</button>
-                <button onclick="resumeSorting()">▶ Resume</button>
-                <button onclick="resetVisualizer()">🔄 Reset</button>
+                <button id="btn-random" onclick="generateRandomArray()">Random Array</button>
+                <button id="btn-start" class="primary-btn" onclick="startSorting()">▶ Start Sorting</button>
+                <button id="btn-pause" onclick="pauseSorting()">⏸ Pause</button>
+                <button id="btn-resume" onclick="resumeSorting()">▶ Resume</button>
+                <button id="btn-reset" onclick="resetVisualizer()">🔄 Reset</button>
             </div>
         </section>
 
@@ -46,7 +46,7 @@
                 <span class="legend-item"><span class="color-box unsorted"></span> Unsorted</span>
                 <span class="legend-item"><span class="color-box comparing"></span> Comparing</span>
                 <span class="legend-item"><span class="color-box swapping"></span> Shifting</span>
-                <span class="legend-item"><span class="color-box sorted"></span> Sorted Prefix</span>
+                <span class="legend-item"><span class="color-box sorted"></span> Sorted Sublist</span>
             </div>
             <div id="array-container" class="visualization-box"></div>
 
@@ -79,7 +79,7 @@
         <section class="right-sidebar">
             <section class="panel info-panel">
                 <h2>Algorithm Info</h2>
-                <p><strong>Insertion Sort</strong> builds the sorted array one item at a time by shifting larger elements to the right.</p>
+                <p><strong>Insertion Sort</strong> builds the sorted array one item at a time by shifting larger elements to the right to insert the current element into its correct place.</p>
                 <div class="complexity-grid">
                     <div><strong>Best Time:</strong> <span>O(N)</span></div>
                     <div><strong>Avg Time:</strong> <span>O(N²)</span></div>
@@ -92,7 +92,7 @@
                 <h2>Algorithm Pseudocode</h2>
                 <div class="pseudocode">
                     <p id="line-1">procedure insertionSort(A : list)</p>
-                    <p id="line-2">&nbsp;&nbsp;for i = 1 to length(A) - 1 do</p>
+                    <p id="line-2">&nbsp;&nbsp;for i = 1 to n - 1 do</p>
                     <p id="line-3">&nbsp;&nbsp;&nbsp;&nbsp;key = A[i], j = i - 1</p>
                     <p id="line-4">&nbsp;&nbsp;&nbsp;&nbsp;while j >= 0 and A[j] > key do</p>
                     <p id="line-5">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A[j + 1] = A[j]</p>
