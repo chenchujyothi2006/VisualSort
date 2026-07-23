@@ -1,247 +1,151 @@
-const barsContainer = document.getElementById("bars");
-const pointersContainer = document.getElementById("pointers-container");
-const tutor = document.getElementById("tutorText");
-const log = document.getElementById("log");
-const pseudocodeBox = document.getElementById("pseudocode");
-
-let arr = [];
-let animationSpeed = 500;
+let array = [];
+let isSorting = false;
 let isPaused = false;
+let delay = 400;
 
-let comparisons = 0;
-let swaps = 0;
-let passes = 0;
-let startTime = 0;
-
-const INSERTION_PSEUDOCODE = [
-    "for i = 1 to N - 1 do",
-    "  key = arr[i]",
-    "  j = i - 1",
-    "  while j >= 0 and arr[j] > key do",
-    "    arr[j + 1] = arr[j]",
-    "    j = j - 1",
-    "  arr[j + 1] = key"
-];
+const arrayContainer = document.getElementById("array-container");
+const inputField = document.getElementById("array-input");
+const speedSelect = document.getElementById("speed");
+const logBox = document.getElementById("execution-log");
 
 function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => {
+        const check = () => {
+            if (!isPaused) setTimeout(resolve, ms);
+            else setTimeout(check, 100);
+        };
+        check();
+    });
 }
 
-async function checkPause() {
-    while (isPaused) {
-        await sleep(100);
+function addLog(msg, type = "info") {
+    if (!logBox) return;
+    const entry = document.createElement("p");
+    entry.className = `log-entry ${type}`;
+    entry.innerText = `> ${msg}`;
+    logBox.appendChild(entry);
+    logBox.scrollTop = logBox.scrollHeight;
+}
+
+function clearLogs() { if (logBox) logBox.innerHTML = ""; }
+
+function highlightCode(lineNum) {
+    document.querySelectorAll(".pseudocode p").forEach(p => p.classList.remove("active"));
+    const line = document.getElementById(`line-${lineNum}`);
+    if (line) line.classList.add("active");
+}
+
+function parseInput() {
+    const val = inputField ? inputField.value.trim() : "";
+    return val ? val.split(/[\s,]+/).map(Number).filter(n => !isNaN(n)) : [];
+}
+
+function renderArray(arr = array, pointers = {}) {
+    if (!arrayContainer) return;
+    arrayContainer.innerHTML = "";
+    const maxVal = Math.max(...arr, 1);
+
+    arr.forEach((value, index) => {
+        const wrapper = document.createElement("div");
+        wrapper.classList.add("bar-wrapper");
+
+        const bar = document.createElement("div");
+        bar.classList.add("bar");
+        bar.style.height = `${Math.min((value / maxVal) * 75 + 15, 95)}%`;
+        bar.innerText = value;
+        wrapper.appendChild(bar);
+
+        let pointerText = [];
+        if (pointers.i === index) pointerText.push("i");
+        if (pointers.j === index) pointerText.push("j");
+        if (pointers.keyIdx === index) pointerText.push("key");
+
+        if (pointerText.length > 0) {
+            const label = document.createElement("div");
+            label.classList.add("pointer-label");
+            label.innerText = pointerText.join(",");
+            wrapper.appendChild(label);
+        }
+
+        arrayContainer.appendChild(wrapper);
+    });
+}
+
+async function insertionSort() {
+    isSorting = true;
+    isPaused = false;
+    clearLogs();
+    addLog("Starting Insertion Sort...", "highlight");
+
+    let n = array.length;
+    highlightCode(1);
+    await sleep(delay);
+
+    for (let i = 1; i < n; i++) {
+        if (!isSorting) return;
+        let key = array[i];
+        let j = i - 1;
+
+        addLog(`Pass ${i}: Key selected = ${key} at index ${i}`, "pass");
+        highlightCode(2);
+        await sleep(delay);
+
+        highlightCode(3);
+        renderArray(array, { i: i, j: j, keyIdx: i });
+        await sleep(delay);
+
+        while (j >= 0 && array[j] > key) {
+            if (!isSorting) return;
+
+            highlightCode(4);
+            renderArray(array, { i: i, j: j, keyIdx: i });
+            let bars = document.querySelectorAll(".bar");
+            bars[j].classList.add("comparing");
+            addLog(`Comparing index ${j} (${array[j]}) with key (${key})`);
+            await sleep(delay);
+
+            highlightCode(5);
+            array[j + 1] = array[j];
+            addLog(`Shifting ${array[j]} to position ${j + 1}`, "swap");
+            renderArray(array, { i: i, j: j });
+            bars = document.querySelectorAll(".bar");
+            bars[j + 1].classList.add("swapping");
+            await sleep(delay);
+
+            highlightCode(6);
+            j--;
+        }
+
+        highlightCode(7);
+        array[j + 1] = key;
+        addLog(`Placed key ${key} at position ${j + 1}`, "sorted");
+        renderArray(array, { i: i });
+        await sleep(delay);
     }
+
+    renderArray(array);
+    document.querySelectorAll(".bar").forEach(b => b.classList.add("sorted"));
+    addLog("Array sorted successfully!", "highlight");
+    highlightCode(0);
+    isSorting = false;
 }
 
+function startSorting() { if (!isSorting) { array = parseInput(); insertionSort(); } }
 function pauseSorting() { isPaused = true; }
 function resumeSorting() { isPaused = false; }
-
-function loadPseudocode(lines) {
-    if (!pseudocodeBox) return;
-    pseudocodeBox.innerHTML = lines
-        .map((line, idx) => `<div class="code-line" id="line-${idx}">${line}</div>`)
-        .join("");
+function resetVisualizer() { isSorting = false; isPaused = false; array = parseInput(); renderArray(array); clearLogs(); highlightCode(0); }
+function generateRandomArray() {
+    array = Array.from({ length: 5 }, () => Math.floor(Math.random() * 50) + 1);
+    inputField.value = array.join(" ");
+    renderArray(array);
+    clearLogs();
 }
 
-function highlightLine(lineIndex) {
-    if (!pseudocodeBox) return;
-    document.querySelectorAll(".code-line").forEach(el => el.classList.remove("active-line"));
-    const target = document.getElementById(`line-${lineIndex}`);
-    if (target) target.classList.add("active-line");
-}
-
-function renderPointers(pointersMap = {}) {
-    if (!pointersContainer) return;
-    pointersContainer.innerHTML = "";
-    arr.forEach((_, idx) => {
-        const slot = document.createElement("div");
-        slot.className = "pointer-slot";
-        if (pointersMap[idx]) {
-            const tag = document.createElement("span");
-            tag.className = `pointer-tag ${pointersMap[idx].type || ""}`;
-            tag.innerText = pointersMap[idx].label;
-            slot.appendChild(tag);
-        }
-        pointersContainer.appendChild(slot);
+if (speedSelect) {
+    speedSelect.addEventListener("change", (e) => {
+        const val = e.target.value.toLowerCase();
+        delay = val === "slow" ? 800 : val === "fast" ? 150 : 400;
     });
 }
 
-function renderBars() {
-    barsContainer.innerHTML = "";
-    arr.forEach(value => {
-        const bar = document.createElement("div");
-        bar.className = "bar";
-        bar.style.height = value * 15 + "px";
-        bar.innerHTML = `<span>${value}</span>`;
-        barsContainer.appendChild(bar);
-    });
-
-    renderPointers();
-    loadPseudocode(INSERTION_PSEUDOCODE);
-
-    comparisons = 0;
-    swaps = 0;
-    passes = 0;
-
-    document.getElementById("arraySize").innerText = arr.length;
-    document.getElementById("comparisons").innerText = 0;
-    document.getElementById("swaps").innerText = 0;
-    document.getElementById("passes").innerText = 0;
-    document.getElementById("executionTime").innerText = "0 ms";
-}
-
-function randomArray() {
-    let size = Number(document.getElementById("size").value) || 8;
-    arr = [];
-    for (let i = 0; i < size; i++) {
-        arr.push(Math.floor(Math.random() * 20) + 1);
-    }
-    document.getElementById("arrayInput").value = arr.join(" ");
-    renderBars();
-    tutor.innerHTML = "Random array generated.<br><br>Click <b>Start Sorting</b>.";
-    log.innerHTML = "Array Loaded Successfully.<br>";
-}
-
-function resetArray() {
-    barsContainer.innerHTML = "";
-    if (pointersContainer) pointersContainer.innerHTML = "";
-    if (pseudocodeBox) pseudocodeBox.innerHTML = "";
-    arr = [];
-
-    document.getElementById("arrayInput").value = "";
-    tutor.innerHTML = "Enter elements or click <b>Random Array</b>, then click <b>Start Sorting</b>.";
-    log.innerHTML = "No iterations yet.";
-
-    comparisons = 0;
-    swaps = 0;
-    passes = 0;
-
-    document.getElementById("arraySize").innerText = 0;
-    document.getElementById("comparisons").innerText = 0;
-    document.getElementById("swaps").innerText = 0;
-    document.getElementById("passes").innerText = 0;
-    document.getElementById("executionTime").innerText = "0 ms";
-
-    document.getElementById("startBtn").disabled = false;
-    isPaused = false;
-}
-
-async function startSorting() {
-    const inputVal = document.getElementById("arrayInput").value.trim();
-    if (inputVal.length > 0) {
-        arr = inputVal.split(/\s+/).map(Number);
-    }
-
-    if (arr.length === 0 || arr.some(isNaN)) {
-        tutor.innerHTML = "<b style='color: #ff6b6b;'>Please enter valid numbers or click Random Array.</b>";
-        return;
-    }
-
-    renderBars();
-    document.getElementById("startBtn").disabled = true;
-    animationSpeed = Number(document.getElementById("speed").value);
-
-    comparisons = 0;
-    swaps = 0;
-    passes = 0;
-    startTime = performance.now();
-    log.innerHTML = "";
-
-    let bars = document.querySelectorAll(".bar");
-    bars[0].classList.add("sorted");
-
-    for (let i = 1; i < arr.length; i++) {
-        await checkPause();
-        highlightLine(0);
-
-        let key = arr[i];
-        highlightLine(1);
-
-        let j = i - 1;
-        highlightLine(2);
-
-        passes++;
-        document.getElementById("passes").innerText = passes;
-
-        renderPointers({ [i]: { label: "key", type: "pivot-tag" }, [j]: { label: "j" } });
-        bars[i].classList.add("swapping");
-
-        tutor.innerHTML = `
-        <b>Pass ${passes}</b><br><br>
-        Key Element: <b>${key}</b><br><br>
-        Inserting into sorted portion.
-        `;
-
-        log.innerHTML += `<b>PASS ${passes}</b><br>Key = ${key}<br>`;
-        await sleep(animationSpeed);
-
-        while (j >= 0 && arr[j] > key) {
-            await checkPause();
-            highlightLine(3);
-
-            comparisons++;
-            document.getElementById("comparisons").innerText = comparisons;
-
-            renderPointers({ [i]: { label: "key", type: "pivot-tag" }, [j]: { label: "j" } });
-            bars[j].classList.add("comparing");
-
-            tutor.innerHTML = `
-            <b>Comparing</b><br><br>
-            ${arr[j]} > ${key}. Shifting ${arr[j]} to index ${j + 1}.
-            `;
-
-            log.innerHTML += `Compare ${arr[j]} and ${key}<br>`;
-            await sleep(animationSpeed);
-
-            highlightLine(4);
-            arr[j + 1] = arr[j];
-            swaps++;
-            document.getElementById("swaps").innerText = swaps;
-
-            bars[j + 1].style.height = arr[j + 1] * 15 + "px";
-            bars[j + 1].innerHTML = `<span>${arr[j + 1]}</span>`;
-
-            log.innerHTML += `Shift ${arr[j]} to index ${j + 1}<br>`;
-            bars[j].classList.remove("comparing");
-
-            highlightLine(5);
-            j--;
-            await sleep(animationSpeed);
-        }
-
-        highlightLine(6);
-        arr[j + 1] = key;
-        bars[j + 1].style.height = key * 15 + "px";
-        bars[j + 1].innerHTML = `<span>${key}</span>`;
-
-        tutor.innerHTML = `<b>Insert Key</b><br><br>${key} inserted at index <b>${j + 1}</b>.`;
-        log.innerHTML += `Insert ${key} at index ${j + 1}<br><hr>`;
-
-        bars.forEach((bar, index) => {
-            if (index <= i) {
-                bar.classList.remove("comparing", "swapping");
-                bar.classList.add("sorted");
-            }
-        });
-
-        await sleep(animationSpeed);
-    }
-
-    renderPointers();
-    highlightLine(-1);
-
-    let endTime = performance.now();
-    let execTime = Math.round(endTime - startTime);
-    document.getElementById("executionTime").innerText = execTime + " ms";
-
-    tutor.innerHTML = `
-    <h3>🎉 Insertion Sort Completed</h3><br>
-    <b>Total Comparisons :</b> ${comparisons}<br>
-    <b>Total Shifts :</b> ${swaps}<br>
-    <b>Total Passes :</b> ${passes}<br>
-    <b>Execution Time :</b> ${execTime} ms
-    `;
-
-    log.innerHTML += `<br><b>Sorting Completed Successfully.</b>`;
-    document.getElementById("startBtn").disabled = false;
-}
+document.addEventListener("DOMContentLoaded", () => { array = parseInput(); renderArray(array); });
