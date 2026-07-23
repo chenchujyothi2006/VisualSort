@@ -1,124 +1,93 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Insertion Sort | VisualSort</title>
+    <title>Insertion Sort Visualizer</title>
     <link rel="stylesheet" href="../css/visualizer.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
 </head>
-
 <body>
+    <header class="navbar">
+        <a href="../index.html" class="btn-dashboard">← Dashboard</a>
+        <h1>Insertion Sort Visualizer</h1>
+    </header>
 
-<header>
-    <button class="back-btn" onclick="window.location.href='../index.html'">
-        ← Dashboard
-    </button>
-    <h1>Insertion Sort Visualization</h1>
-</header>
+    <main class="main-container">
+        <!-- Controls Panel -->
+        <section class="panel controls-panel">
+            <h2>Controls</h2>
+            <div class="control-group">
+                <label for="array-size">Array Size</label>
+                <input type="number" id="array-size" value="5" min="3" max="20" disabled>
+            </div>
+            <div class="control-group">
+                <label for="array-input">Array Elements (space separated)</label>
+                <input type="text" id="array-input" value="8 5 3 1 9" placeholder="e.g. 8 5 3 1 9">
+            </div>
+            <div class="control-group">
+                <label for="speed">Animation Speed</label>
+                <select id="speed">
+                    <option value="slow">Slow</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="fast">Fast</option>
+                </select>
+            </div>
+            <div class="button-group">
+                <button id="random-btn" onclick="generateRandomArray()">Random Array</button>
+                <button id="start-btn" class="primary-btn" onclick="startSorting()">▶ Start Sorting</button>
+                <button id="pause-btn" onclick="pauseSorting()">⏸ Pause</button>
+                <button id="resume-btn" onclick="resumeSorting()">▶ Resume</button>
+                <button id="reset-btn" onclick="resetVisualizer()">🔄 Reset</button>
+            </div>
+        </section>
 
-<div class="main-container">
+        <!-- Visualization Area -->
+        <section class="panel visualization-panel">
+            <h2>Visualization</h2>
+            <div class="legend">
+                <span class="legend-item"><span class="color-box unsorted"></span> Unsorted</span>
+                <span class="legend-item"><span class="color-box comparing"></span> Comparing</span>
+                <span class="legend-item"><span class="color-box swapping"></span> Shifting</span>
+                <span class="legend-item"><span class="color-box sorted"></span> Sorted</span>
+            </div>
+            <div id="array-container" class="visualization-box"></div>
 
-    <!-- Controls -->
-    <div class="controls">
-        <h2>Controls</h2>
+            <div class="log-container">
+                <h3>Iteration Log</h3>
+                <div id="execution-log" class="log-box">
+                    <p class="log-entry">Click "Start Sorting" to view execution steps...</p>
+                </div>
+            </div>
+        </section>
 
-        <label>Array Size</label>
-        <input type="number" id="size" value="8" min="2" max="15">
+        <!-- Sidebar Info & Pseudocode -->
+        <section class="right-sidebar">
+            <section class="panel info-panel">
+                <h2>Algorithm Info</h2>
+                <p><strong>Insertion Sort</strong> builds the final sorted array one element at a time by shifting elements that are greater than the current key element.</p>
+                <div class="complexity-grid">
+                    <div><strong>Best Time:</strong> <span>O(N)</span></div>
+                    <div><strong>Avg Time:</strong> <span>O(N²)</span></div>
+                    <div><strong>Worst Time:</strong> <span>O(N²)</span></div>
+                    <div><strong>Space:</strong> <span>O(1)</span></div>
+                </div>
+            </section>
 
-        <label>Array Elements</label>
-        <input type="text" id="arrayInput" placeholder="Example : 8 5 3 1 9">
+            <section class="panel pseudocode-panel">
+                <h2>Algorithm Pseudocode</h2>
+                <div class="pseudocode">
+                    <p id="line-1">procedure insertionSort(A : list)</p>
+                    <p id="line-2">&nbsp;&nbsp;for i = 1 to length(A) - 1 do</p>
+                    <p id="line-3">&nbsp;&nbsp;&nbsp;&nbsp;key = A[i], j = i - 1</p>
+                    <p id="line-4">&nbsp;&nbsp;&nbsp;&nbsp;while j >= 0 and A[j] > key do</p>
+                    <p id="line-5">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A[j + 1] = A[j]</p>
+                    <p id="line-6">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;j = j - 1</p>
+                    <p id="line-7">&nbsp;&nbsp;&nbsp;&nbsp;A[j + 1] = key</p>
+                </div>
+            </section>
+        </section>
+    </main>
 
-        <label>Animation Speed</label>
-        <select id="speed">
-            <option value="1000">Slow</option>
-            <option value="500" selected>Medium</option>
-            <option value="200">Fast</option>
-        </select>
-
-        <button onclick="randomArray()">Random Array</button>
-        <button id="startBtn" onclick="startSorting()">▶ Start Sorting</button>
-        <button onclick="pauseSorting()">⏸ Pause</button>
-        <button onclick="resumeSorting()">▶ Resume</button>
-        <button onclick="resetArray()">🔄 Reset</button>
-    </div>
-
-    <!-- Visualization -->
-    <div class="visualization">
-        <h2>Visualization</h2>
-
-        <div class="color-legend">
-            <div class="legend-item"><span class="color-box default-box"></span> Unsorted</div>
-            <div class="legend-item"><span class="color-box compare-box"></span> Key / Target</div>
-            <div class="legend-item"><span class="color-box swap-box"></span> Shifting</div>
-            <div class="legend-item"><span class="color-box sorted-box"></span> Sorted Subarray</div>
-        </div>
-
-        <div class="viz-stage">
-            <div id="pointers-container"></div>
-            <div id="bars"></div>
-        </div>
-    </div>
-
-    <!-- Pseudocode Panel -->
-    <div class="pseudocode-card">
-        <h2>Algorithm Pseudocode</h2>
-        <div class="pseudocode-box">
-            <div class="code-line" id="line-1">procedure insertionSort(A : list)</div>
-            <div class="code-line" id="line-2">&nbsp;&nbsp;for i = 1 to length(A) - 1 do</div>
-            <div class="code-line" id="line-3">&nbsp;&nbsp;&nbsp;&nbsp;key = A[i]</div>
-            <div class="code-line" id="line-4">&nbsp;&nbsp;&nbsp;&nbsp;j = i - 1</div>
-            <div class="code-line" id="line-5">&nbsp;&nbsp;&nbsp;&nbsp;while j >= 0 and A[j] > key do</div>
-            <div class="code-line" id="line-6">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A[j + 1] = A[j]</div>
-            <div class="code-line" id="line-7">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;j = j - 1</div>
-            <div class="code-line" id="line-8">&nbsp;&nbsp;&nbsp;&nbsp;A[j + 1] = key</div>
-        </div>
-    </div>
-
-</div>
-
-<div class="bottom">
-
-    <!-- Iteration Log -->
-    <div class="log">
-        <h2>Iteration Log</h2>
-        <div id="log">
-            No iterations yet.
-        </div>
-    </div>
-
-    <!-- Information -->
-    <div class="info">
-        <h2>Insertion Sort</h2>
-        <h3>Statistics</h3>
-
-        <p>Array Size : <span id="arraySize">0</span></p>
-        <p>Comparisons : <span id="comparisons">0</span></p>
-        <p>Swaps : <span id="swaps">0</span></p>
-        <p>Passes : <span id="passes">0</span></p>
-        <p>Execution Time : <span id="executionTime">0 ms</span></p>
-
-        <hr style="margin:15px 0;">
-
-        <p>
-            Insertion Sort builds a sorted array one element
-            at a time by inserting each element into its
-            correct position.
-        </p>
-
-        <br>
-
-        <p><b>Best Case :</b> O(n)</p>
-        <p><b>Average Case :</b> O(n²)</p>
-        <p><b>Worst Case :</b> O(n²)</p>
-        <p><b>Space :</b> O(1)</p>
-        <p><b>Stable :</b> Yes</p>
-    </div>
-
-</div>
-
-<script src="../js/insertion.js"></script>
-
+    <script src="../js/insertion.js"></script>
 </body>
 </html>
