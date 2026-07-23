@@ -1,17 +1,29 @@
-/**
- * VisualSort - Bubble Sort Engine (with Pointer Movements & Logs)
- */
-
 let array = [];
 let isSorting = false;
 let isPaused = false;
 let delay = 400;
 
+let totalPasses = 0;
+let totalComparisons = 0;
+let totalSwaps = 0;
+
 const arrayContainer = document.getElementById("array-container");
 const inputField = document.getElementById("array-input");
-const sizeInput = document.getElementById("array-size");
 const speedSelect = document.getElementById("speed");
 const logBox = document.getElementById("execution-log");
+
+function updateMetricsUI() {
+    if (document.getElementById("stat-passes")) document.getElementById("stat-passes").innerText = totalPasses;
+    if (document.getElementById("stat-comparisons")) document.getElementById("stat-comparisons").innerText = totalComparisons;
+    if (document.getElementById("stat-swaps")) document.getElementById("stat-swaps").innerText = totalSwaps;
+}
+
+function resetMetrics() {
+    totalPasses = 0;
+    totalComparisons = 0;
+    totalSwaps = 0;
+    updateMetricsUI();
+}
 
 function sleep(ms) {
     return new Promise((resolve) => {
@@ -23,40 +35,31 @@ function sleep(ms) {
     });
 }
 
-function addLog(message, type = "info") {
+function addLog(msg, type = "info") {
     if (!logBox) return;
     const entry = document.createElement("p");
     entry.className = `log-entry ${type}`;
-    entry.innerText = `> ${message}`;
+    entry.innerText = `> ${msg}`;
     logBox.appendChild(entry);
     logBox.scrollTop = logBox.scrollHeight;
 }
 
-function clearLogs() {
-    if (logBox) logBox.innerHTML = "";
-}
+function clearLogs() { if (logBox) logBox.innerHTML = ""; }
 
 function highlightCode(lineNum) {
-    const lines = document.querySelectorAll(".pseudocode p");
-    lines.forEach((line) => line.classList.remove("active"));
-    if (lineNum > 0) {
-        const activeLine = document.getElementById(`line-${lineNum}`);
-        if (activeLine) activeLine.classList.add("active");
-    }
+    document.querySelectorAll(".pseudocode p").forEach(p => p.classList.remove("active"));
+    const line = document.getElementById(`line-${lineNum}`);
+    if (line) line.classList.add("active");
 }
 
 function parseInput() {
-    if (!inputField) return [];
-    const rawVal = inputField.value.trim();
-    if (!rawVal) return [];
-    return rawVal.split(/[\s,]+/).map(Number).filter((n) => !isNaN(n));
+    const val = inputField ? inputField.value.trim() : "";
+    return val ? val.split(/[\s,]+/).map(Number).filter(n => !isNaN(n)) : [];
 }
 
-// Render Bars with Pointer Badge Indicators
-function renderArray(arr = array, pointers = {}) {
+function renderArray(arr = array, sortedIndices = new Set(), pointers = {}) {
     if (!arrayContainer) return;
     arrayContainer.innerHTML = "";
-
     const maxVal = Math.max(...arr, 1);
 
     arr.forEach((value, index) => {
@@ -65,19 +68,15 @@ function renderArray(arr = array, pointers = {}) {
 
         const bar = document.createElement("div");
         bar.classList.add("bar");
-        bar.setAttribute("data-index", index);
-
-        const heightPercent = Math.min((value / maxVal) * 75 + 15, 95);
-        bar.style.height = `${heightPercent}%`;
+        bar.style.height = `${Math.min((value / maxVal) * 75 + 15, 95)}%`;
         bar.innerText = value;
 
+        if (sortedIndices.has(index)) bar.classList.add("sorted");
         wrapper.appendChild(bar);
 
-        // Pointer indicators (Feature #5)
         let pointerText = [];
         if (pointers.i === index) pointerText.push("i");
         if (pointers.j === index) pointerText.push("j");
-        if (pointers.jNext === index) pointerText.push("j+1");
 
         if (pointerText.length > 0) {
             const label = document.createElement("div");
@@ -90,49 +89,41 @@ function renderArray(arr = array, pointers = {}) {
     });
 }
 
-function generateRandomArray() {
-    if (isSorting) return;
-    const randomArr = Array.from({ length: 5 }, () => Math.floor(Math.random() * 50) + 1);
-    inputField.value = randomArr.join(" ");
-    array = randomArr;
-    if (sizeInput) sizeInput.value = array.length;
-    renderArray(array);
-    clearLogs();
-    addLog("Generated random array: [" + array.join(", ") + "]");
-}
-
 async function bubbleSort() {
     isSorting = true;
     isPaused = false;
     clearLogs();
+    resetMetrics();
     addLog("Starting Bubble Sort...", "highlight");
 
     let n = array.length;
-    highlightCode(1);
-    await sleep(delay);
+    let sortedIndices = new Set();
 
-    highlightCode(2);
+    highlightCode(1);
     await sleep(delay);
 
     for (let i = 0; i < n - 1; i++) {
         if (!isSorting) return;
-        addLog(`Pass ${i + 1}: Outer loop (i = ${i})`, "pass");
+
+        totalPasses++;
+        updateMetricsUI();
+        addLog(`Pass ${totalPasses}: Starting pass`, "pass");
         highlightCode(3);
         await sleep(delay);
 
         for (let j = 0; j < n - i - 1; j++) {
             if (!isSorting) return;
 
-            renderArray(array, { i: i, j: j, jNext: j + 1 });
+            renderArray(array, sortedIndices, { i: i, j: j });
             let bars = document.querySelectorAll(".bar");
 
             highlightCode(4);
             bars[j].classList.add("comparing");
             bars[j + 1].classList.add("comparing");
-            addLog(`Comparing index ${j} (${array[j]}) & ${j + 1} (${array[j + 1]})`);
-            await sleep(delay);
 
-            highlightCode(5);
+            totalComparisons++;
+            updateMetricsUI();
+            addLog(`Comparing index ${j} (${array[j]}) & ${j + 1} (${array[j + 1]})`);
             await sleep(delay);
 
             if (array[j] > array[j + 1]) {
@@ -141,6 +132,9 @@ async function bubbleSort() {
                 bars[j + 1].classList.remove("comparing");
                 bars[j].classList.add("swapping");
                 bars[j + 1].classList.add("swapping");
+
+                totalSwaps++;
+                updateMetricsUI();
                 addLog(`Swapping ${array[j]} and ${array[j + 1]}`, "swap");
                 await sleep(delay);
 
@@ -148,7 +142,7 @@ async function bubbleSort() {
                 array[j] = array[j + 1];
                 array[j + 1] = temp;
 
-                renderArray(array, { i: i, j: j, jNext: j + 1 });
+                renderArray(array, sortedIndices, { i: i, j: j });
                 bars = document.querySelectorAll(".bar");
                 bars[j].classList.add("swapping");
                 bars[j + 1].classList.add("swapping");
@@ -156,61 +150,43 @@ async function bubbleSort() {
             }
         }
 
-        highlightCode(7);
-        renderArray(array, { i: i });
-        let bars = document.querySelectorAll(".bar");
-        bars[n - i - 1].classList.add("sorted");
+        sortedIndices.add(n - i - 1);
+        renderArray(array, sortedIndices);
         addLog(`Element ${array[n - i - 1]} is now sorted!`, "sorted");
+        highlightCode(7);
+        await sleep(delay);
     }
 
-    renderArray(array);
-    document.querySelectorAll(".bar").forEach(b => b.classList.add("sorted"));
-    addLog("Array sorted successfully!", "highlight");
+    sortedIndices.add(0);
+    renderArray(array, sortedIndices);
+
+    addLog("----------------------------------", "highlight");
+    addLog("🎉 SORTING COMPLETED!", "highlight");
+    addLog(`Total Passes: ${totalPasses} | Comparisons: ${totalComparisons} | Swaps: ${totalSwaps}`);
+    addLog(`Time Complexity: O(N²) | Space Complexity: O(1)`);
+    addLog("----------------------------------", "highlight");
+
     highlightCode(0);
     isSorting = false;
+}
+
+function startSorting() { if (!isSorting) { array = parseInput(); bubbleSort(); } }
+function pauseSorting() { isPaused = true; }
+function resumeSorting() { isPaused = false; }
+function resetVisualizer() { isSorting = false; isPaused = false; array = parseInput(); renderArray(array); clearLogs(); resetMetrics(); highlightCode(0); }
+function generateRandomArray() {
+    array = Array.from({ length: 5 }, () => Math.floor(Math.random() * 50) + 1);
+    inputField.value = array.join(" ");
+    renderArray(array);
+    clearLogs();
+    resetMetrics();
 }
 
 if (speedSelect) {
     speedSelect.addEventListener("change", (e) => {
         const val = e.target.value.toLowerCase();
-        if (val === "slow") delay = 800;
-        else if (val === "medium") delay = 400;
-        else if (val === "fast") delay = 150;
+        delay = val === "slow" ? 800 : val === "fast" ? 150 : 400;
     });
 }
 
-if (inputField) {
-    inputField.addEventListener("input", () => {
-        if (!isSorting) {
-            array = parseInput();
-            if (sizeInput) sizeInput.value = array.length;
-            renderArray(array);
-            clearLogs();
-        }
-    });
-}
-
-function startSorting() {
-    if (isSorting && isPaused) { isPaused = false; return; }
-    if (!isSorting) {
-        array = parseInput();
-        if (array.length === 0) return;
-        bubbleSort();
-    }
-}
-
-function pauseSorting() { if (isSorting) isPaused = true; }
-function resumeSorting() { if (isSorting && isPaused) isPaused = false; }
-function resetVisualizer() {
-    isSorting = false;
-    isPaused = false;
-    array = parseInput();
-    renderArray(array);
-    highlightCode(0);
-    clearLogs();
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-    array = parseInput();
-    renderArray(array);
-});
+document.addEventListener("DOMContentLoaded", () => { array = parseInput(); renderArray(array); });
