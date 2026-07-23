@@ -45,11 +45,28 @@
             <div class="legend">
                 <span class="legend-item"><span class="color-box unsorted"></span> Unsorted</span>
                 <span class="legend-item"><span class="color-box comparing"></span> Comparing</span>
-                <span class="legend-item"><span class="color-box swapping"></span> Swapping</span>
                 <span class="legend-item"><span class="color-box pivot"></span> Pivot</span>
                 <span class="legend-item"><span class="color-box sorted"></span> Sorted</span>
             </div>
             <div id="array-container" class="visualization-box"></div>
+
+            <div class="metrics-container">
+                <h3>Execution Metrics</h3>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="label">Partitions</div>
+                        <div id="stat-passes" class="value">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="label">Comparisons</div>
+                        <div id="stat-comparisons" class="value">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="label">Swaps</div>
+                        <div id="stat-swaps" class="value">0</div>
+                    </div>
+                </div>
+            </div>
 
             <div class="log-container">
                 <h3>Iteration Log</h3>
@@ -62,7 +79,7 @@
         <section class="right-sidebar">
             <section class="panel info-panel">
                 <h2>Algorithm Info</h2>
-                <p><strong>Quick Sort</strong> is a Divide and Conquer algorithm. It picks an element as a pivot and partitions the array around the pivot.</p>
+                <p><strong>Quick Sort</strong> picks a pivot element and partitions array elements around it recursively.</p>
                 <div class="complexity-grid">
                     <div><strong>Best Time:</strong> <span>O(N log N)</span></div>
                     <div><strong>Avg Time:</strong> <span>O(N log N)</span></div>
