@@ -7,27 +7,22 @@
     <link rel="stylesheet" href="../css/visualizer.css">
 </head>
 <body>
-
     <header class="navbar">
         <a href="../index.html" class="btn-dashboard">← Dashboard</a>
         <h1>Bubble Sort Visualizer</h1>
     </header>
 
     <main class="main-container">
-        <!-- Control Panel -->
         <section class="panel controls-panel">
             <h2>Controls</h2>
-            
             <div class="control-group">
                 <label for="array-size">Array Size</label>
-                <input type="number" id="array-size" value="5" min="3" max="20" disabled>
+                <input type="number" id="array-size" value="5" disabled>
             </div>
-
             <div class="control-group">
-                <label for="array-input">Array Elements (space separated)</label>
-                <input type="text" id="array-input" value="8 5 3 1 9" placeholder="e.g. 8 5 3 1 9">
+                <label for="array-input">Array Elements</label>
+                <input type="text" id="array-input" value="8 5 3 1 9">
             </div>
-
             <div class="control-group">
                 <label for="speed">Animation Speed</label>
                 <select id="speed">
@@ -36,30 +31,43 @@
                     <option value="fast">Fast</option>
                 </select>
             </div>
-
             <div class="button-group">
-                <button id="random-btn" onclick="generateRandomArray()">Random Array</button>
-                <button id="start-btn" class="primary-btn" onclick="startSorting()">▶ Start Sorting</button>
-                <button id="pause-btn" onclick="pauseSorting()">⏸ Pause</button>
-                <button id="resume-btn" onclick="resumeSorting()">▶ Resume</button>
-                <button id="reset-btn" onclick="resetVisualizer()">🔄 Reset</button>
+                <button onclick="generateRandomArray()">Random Array</button>
+                <button class="primary-btn" onclick="startSorting()">▶ Start Sorting</button>
+                <button onclick="pauseSorting()">⏸ Pause</button>
+                <button onclick="resumeSorting()">▶ Resume</button>
+                <button onclick="resetVisualizer()">🔄 Reset</button>
             </div>
         </section>
 
-        <!-- Visualization Panel -->
         <section class="panel visualization-panel">
             <h2>Visualization</h2>
-            
             <div class="legend">
                 <span class="legend-item"><span class="color-box unsorted"></span> Unsorted</span>
                 <span class="legend-item"><span class="color-box comparing"></span> Comparing</span>
                 <span class="legend-item"><span class="color-box swapping"></span> Swapping</span>
                 <span class="legend-item"><span class="color-box sorted"></span> Sorted</span>
             </div>
-
             <div id="array-container" class="visualization-box"></div>
 
-            <!-- Iteration Log -->
+            <div class="metrics-container">
+                <h3>Execution Metrics</h3>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="label">Passes</div>
+                        <div id="stat-passes" class="value">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="label">Comparisons</div>
+                        <div id="stat-comparisons" class="value">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="label">Swaps</div>
+                        <div id="stat-swaps" class="value">0</div>
+                    </div>
+                </div>
+            </div>
+
             <div class="log-container">
                 <h3>Iteration Log</h3>
                 <div id="execution-log" class="log-box">
@@ -68,7 +76,6 @@
             </div>
         </section>
 
-        <!-- Right Side: Information & Pseudocode -->
         <section class="right-sidebar">
             <section class="panel info-panel">
                 <h2>Algorithm Info</h2>
@@ -87,10 +94,10 @@
                     <p id="line-1">procedure bubbleSort(A : list)</p>
                     <p id="line-2">&nbsp;&nbsp;n = length(A)</p>
                     <p id="line-3">&nbsp;&nbsp;for i = 0 to n - 1 do</p>
-                    <p id="line-4">&nbsp;&nbsp;&nbsp;&nbsp;for j = 0 to n - i - 2 do</p>
+                    <p id="line-4">&nbsp;&nbsp;&nbsp;&nbsp;for j = 0 to n - i - 1 do</p>
                     <p id="line-5">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if A[j] > A[j + 1] then</p>
                     <p id="line-6">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;swap(A[j], A[j + 1])</p>
-                    <p id="line-7">&nbsp;&nbsp;mark A[n - i - 1] as sorted</p>
+                    <p id="line-7">&nbsp;&nbsp;element at n - i - 1 is sorted</p>
                 </div>
             </section>
         </section>
