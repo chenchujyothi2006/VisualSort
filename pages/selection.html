@@ -17,11 +17,11 @@
             <h2>Controls</h2>
             <div class="control-group">
                 <label for="array-size">Array Size</label>
-                <input type="number" id="array-size" value="5" disabled>
+                <input type="number" id="array-size" value="5" min="2" max="20">
             </div>
             <div class="control-group">
                 <label for="array-input">Array Elements</label>
-                <input type="text" id="array-input" value="8 5 3 1 9">
+                <input type="text" id="array-input" value="64 25 12 22 11" placeholder="e.g. 64 25 12 22 11">
             </div>
             <div class="control-group">
                 <label for="speed">Animation Speed</label>
@@ -32,11 +32,11 @@
                 </select>
             </div>
             <div class="button-group">
-                <button onclick="generateRandomArray()">Random Array</button>
-                <button class="primary-btn" onclick="startSorting()">▶ Start Sorting</button>
-                <button onclick="pauseSorting()">⏸ Pause</button>
-                <button onclick="resumeSorting()">▶ Resume</button>
-                <button onclick="resetVisualizer()">🔄 Reset</button>
+                <button id="btn-random" onclick="generateRandomArray()">Random Array</button>
+                <button id="btn-start" class="primary-btn" onclick="startSorting()">▶ Start Sorting</button>
+                <button id="btn-pause" onclick="pauseSorting()">⏸ Pause</button>
+                <button id="btn-resume" onclick="resumeSorting()">▶ Resume</button>
+                <button id="btn-reset" onclick="resetVisualizer()">🔄 Reset</button>
             </div>
         </section>
 
@@ -45,7 +45,7 @@
             <div class="legend">
                 <span class="legend-item"><span class="color-box unsorted"></span> Unsorted</span>
                 <span class="legend-item"><span class="color-box comparing"></span> Comparing</span>
-                <span class="legend-item"><span class="color-box pivot"></span> Min Index</span>
+                <span class="legend-item"><span class="color-box pivot"></span> Current Min</span>
                 <span class="legend-item"><span class="color-box swapping"></span> Swapping</span>
                 <span class="legend-item"><span class="color-box sorted"></span> Sorted</span>
             </div>
@@ -93,11 +93,11 @@
                 <h2>Algorithm Pseudocode</h2>
                 <div class="pseudocode">
                     <p id="line-1">procedure selectionSort(A : list)</p>
-                    <p id="line-2">&nbsp;&nbsp;for i = 0 to length(A) - 1 do</p>
+                    <p id="line-2">&nbsp;&nbsp;for i = 0 to n - 2 do</p>
                     <p id="line-3">&nbsp;&nbsp;&nbsp;&nbsp;min_idx = i</p>
-                    <p id="line-4">&nbsp;&nbsp;&nbsp;&nbsp;for j = i + 1 to length(A) do</p>
+                    <p id="line-4">&nbsp;&nbsp;&nbsp;&nbsp;for j = i + 1 to n - 1 do</p>
                     <p id="line-5">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if A[j] < A[min_idx] then min_idx = j</p>
-                    <p id="line-6">&nbsp;&nbsp;&nbsp;&nbsp;swap A[i] and A[min_idx]</p>
+                    <p id="line-6">&nbsp;&nbsp;&nbsp;&nbsp;swap(A[i], A[min_idx])</p>
                 </div>
             </section>
         </section>
