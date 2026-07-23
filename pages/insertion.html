@@ -13,16 +13,15 @@
     </header>
 
     <main class="main-container">
-        <!-- Controls Panel -->
         <section class="panel controls-panel">
             <h2>Controls</h2>
             <div class="control-group">
                 <label for="array-size">Array Size</label>
-                <input type="number" id="array-size" value="5" min="3" max="20" disabled>
+                <input type="number" id="array-size" value="5" disabled>
             </div>
             <div class="control-group">
-                <label for="array-input">Array Elements (space separated)</label>
-                <input type="text" id="array-input" value="8 5 3 1 9" placeholder="e.g. 8 5 3 1 9">
+                <label for="array-input">Array Elements</label>
+                <input type="text" id="array-input" value="8 5 3 1 9">
             </div>
             <div class="control-group">
                 <label for="speed">Animation Speed</label>
@@ -33,24 +32,41 @@
                 </select>
             </div>
             <div class="button-group">
-                <button id="random-btn" onclick="generateRandomArray()">Random Array</button>
-                <button id="start-btn" class="primary-btn" onclick="startSorting()">▶ Start Sorting</button>
-                <button id="pause-btn" onclick="pauseSorting()">⏸ Pause</button>
-                <button id="resume-btn" onclick="resumeSorting()">▶ Resume</button>
-                <button id="reset-btn" onclick="resetVisualizer()">🔄 Reset</button>
+                <button onclick="generateRandomArray()">Random Array</button>
+                <button class="primary-btn" onclick="startSorting()">▶ Start Sorting</button>
+                <button onclick="pauseSorting()">⏸ Pause</button>
+                <button onclick="resumeSorting()">▶ Resume</button>
+                <button onclick="resetVisualizer()">🔄 Reset</button>
             </div>
         </section>
 
-        <!-- Visualization Area -->
         <section class="panel visualization-panel">
             <h2>Visualization</h2>
             <div class="legend">
                 <span class="legend-item"><span class="color-box unsorted"></span> Unsorted</span>
                 <span class="legend-item"><span class="color-box comparing"></span> Comparing</span>
                 <span class="legend-item"><span class="color-box swapping"></span> Shifting</span>
-                <span class="legend-item"><span class="color-box sorted"></span> Sorted</span>
+                <span class="legend-item"><span class="color-box sorted"></span> Sorted Prefix</span>
             </div>
             <div id="array-container" class="visualization-box"></div>
+
+            <div class="metrics-container">
+                <h3>Execution Metrics</h3>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="label">Passes</div>
+                        <div id="stat-passes" class="value">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="label">Comparisons</div>
+                        <div id="stat-comparisons" class="value">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="label">Shifts</div>
+                        <div id="stat-swaps" class="value">0</div>
+                    </div>
+                </div>
+            </div>
 
             <div class="log-container">
                 <h3>Iteration Log</h3>
@@ -60,11 +76,10 @@
             </div>
         </section>
 
-        <!-- Sidebar Info & Pseudocode -->
         <section class="right-sidebar">
             <section class="panel info-panel">
                 <h2>Algorithm Info</h2>
-                <p><strong>Insertion Sort</strong> builds the final sorted array one element at a time by shifting elements that are greater than the current key element.</p>
+                <p><strong>Insertion Sort</strong> builds the sorted array one item at a time by shifting larger elements to the right.</p>
                 <div class="complexity-grid">
                     <div><strong>Best Time:</strong> <span>O(N)</span></div>
                     <div><strong>Avg Time:</strong> <span>O(N²)</span></div>
