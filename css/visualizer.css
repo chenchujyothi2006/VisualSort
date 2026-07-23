@@ -247,3 +247,34 @@ button:hover {
     color: #000;
     font-weight: bold;
 }
+/* Execution Metrics Cards */
+.metrics-container {
+    margin-top: 15px;
+}
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.metric-card {
+    background-color: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+}
+
+.metric-card .value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #22c55e;
+    margin-top: 4px;
+}
+
+.metric-card .label {
+    font-size: 0.75rem;
+    color: #94a3b8;
+}
