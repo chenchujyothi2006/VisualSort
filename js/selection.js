@@ -1,255 +1,163 @@
-// State Management Variables
 let array = [];
 let isSorting = false;
 let isPaused = false;
-let passes = 0;
-let comparisons = 0;
-let swaps = 0;
+let delay = 400;
 
-const SPEED_MAP = { slow: 800, medium: 400, fast: 150 };
-
-// DOM References
 const arrayContainer = document.getElementById("array-container");
-const arrayInput = document.getElementById("array-input");
-const arraySizeInput = document.getElementById("array-size");
+const inputField = document.getElementById("array-input");
 const speedSelect = document.getElementById("speed");
+const logBox = document.getElementById("execution-log");
 
-const statPasses = document.getElementById("stat-passes");
-const statComparisons = document.getElementById("stat-comparisons");
-const statSwaps = document.getElementById("stat-swaps");
-const executionLog = document.getElementById("execution-log");
-
-const btnStart = document.getElementById("btn-start");
-const btnPause = document.getElementById("btn-pause");
-const btnResume = document.getElementById("btn-resume");
-const btnRandom = document.getElementById("btn-random");
-
-document.addEventListener("DOMContentLoaded", () => {
-    arrayInput.addEventListener("input", parseCustomInput);
-    arraySizeInput.addEventListener("change", handleSizeChange);
-    arraySizeInput.addEventListener("input", handleSizeChange);
-    parseCustomInput();
-});
-
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-async function checkPause() {
-    while (isPaused && isSorting) {
-        await sleep(100);
-    }
+function sleep(ms) {
+    return new Promise((resolve) => {
+        const check = () => {
+            if (!isPaused) setTimeout(resolve, ms);
+            else setTimeout(check, 100);
+        };
+        check();
+    });
 }
 
-function renderArray(highlightIndices = {}, activeLine = null) {
-    arrayContainer.innerHTML = "";
-    const maxVal = Math.max(...array, 10);
+function addLog(msg, type = "info") {
+    if (!logBox) return;
+    const entry = document.createElement("p");
+    entry.className = `log-entry ${type}`;
+    entry.innerText = `> ${msg}`;
+    logBox.appendChild(entry);
+    logBox.scrollTop = logBox.scrollHeight;
+}
 
-    array.forEach((val, idx) => {
+function clearLogs() { if (logBox) logBox.innerHTML = ""; }
+
+function highlightCode(lineNum) {
+    document.querySelectorAll(".pseudocode p").forEach(p => p.classList.remove("active"));
+    const line = document.getElementById(`line-${lineNum}`);
+    if (line) line.classList.add("active");
+}
+
+function parseInput() {
+    const rawVal = inputField ? inputField.value.trim() : "";
+    return rawVal ? rawVal.split(/[\s,]+/).map(Number).filter(n => !isNaN(n)) : [];
+}
+
+function renderArray(arr = array, pointers = {}) {
+    if (!arrayContainer) return;
+    arrayContainer.innerHTML = "";
+    const maxVal = Math.max(...arr, 1);
+
+    arr.forEach((value, index) => {
+        const wrapper = document.createElement("div");
+        wrapper.classList.add("bar-wrapper");
+
         const bar = document.createElement("div");
         bar.classList.add("bar");
-        const heightPercent = Math.max((val / maxVal) * 85, 10);
-        bar.style.height = `${heightPercent}%`;
-        
-        const label = document.createElement("span");
-        label.classList.add("bar-value");
-        label.textContent = val;
-        bar.appendChild(label);
+        bar.style.height = `${Math.min((value / maxVal) * 75 + 15, 95)}%`;
+        bar.innerText = value;
+        wrapper.appendChild(bar);
 
-        if (highlightIndices.minIdx === idx) {
-            bar.classList.add("pivot"); // Current Min
-        } else if (highlightIndices.comparing && highlightIndices.comparing.includes(idx)) {
-            bar.classList.add("comparing");
-        } else if (highlightIndices.swapping && highlightIndices.swapping.includes(idx)) {
-            bar.classList.add("swapping");
-        } else if (idx < highlightIndices.sortedCount || highlightIndices.allSorted) {
-            bar.classList.add("sorted");
-        } else {
-            bar.classList.add("unsorted");
+        let pointerText = [];
+        if (pointers.i === index) pointerText.push("i");
+        if (pointers.j === index) pointerText.push("j");
+        if (pointers.minIdx === index) pointerText.push("min");
+
+        if (pointerText.length > 0) {
+            const label = document.createElement("div");
+            label.classList.add("pointer-label");
+            label.innerText = pointerText.join(",");
+            wrapper.appendChild(label);
         }
 
-        arrayContainer.appendChild(bar);
+        arrayContainer.appendChild(wrapper);
     });
-
-    highlightPseudocode(activeLine);
 }
 
-function highlightPseudocode(lineId) {
-    document.querySelectorAll(".pseudocode p").forEach(p => p.classList.remove("active-line"));
-    if (lineId) {
-        const target = document.getElementById(`line-${lineId}`);
-        if (target) target.classList.add("active-line");
-    }
-}
-
-function addLog(message) {
-    const p = document.createElement("p");
-    p.classList.add("log-entry");
-    p.textContent = message;
-    executionLog.appendChild(p);
-    executionLog.scrollTop = executionLog.scrollHeight;
-}
-
-function resetMetrics() {
-    passes = 0;
-    comparisons = 0;
-    swaps = 0;
-    statPasses.textContent = "0";
-    statComparisons.textContent = "0";
-    statSwaps.textContent = "0";
-    executionLog.innerHTML = '<p class="log-entry">Click "Start Sorting" to view execution steps...</p>';
-    highlightPseudocode(null);
-}
-
-function parseCustomInput() {
-    if (isSorting) return;
-    const raw = arrayInput.value.trim();
-    if (!raw) {
-        array = [];
-        arrayContainer.innerHTML = "";
-        return;
-    }
-    const parsed = raw.split(/[\s,]+/).map(Number).filter(n => !isNaN(n));
-    if (parsed.length > 0) {
-        array = parsed.slice(0, 20);
-        arraySizeInput.value = array.length;
-        resetMetrics();
-        renderArray();
-    }
-}
-
-function handleSizeChange() {
-    if (isSorting) return;
-    let size = parseInt(arraySizeInput.value) || 5;
-    size = Math.min(Math.max(size, 2), 20);
-    arraySizeInput.value = size;
-
-    array = Array.from({ length: size }, () => Math.floor(Math.random() * 90) + 10);
-    arrayInput.value = array.join(" ");
-    resetMetrics();
-    renderArray();
-}
-
-function generateRandomArray() {
-    if (isSorting) return;
-    const size = parseInt(arraySizeInput.value) || 5;
-    array = Array.from({ length: size }, () => Math.floor(Math.random() * 90) + 10);
-    arrayInput.value = array.join(" ");
-    resetMetrics();
-    renderArray();
-}
-
-function toggleInputs(disabled) {
-    arrayInput.disabled = disabled;
-    arraySizeInput.disabled = disabled;
-    btnRandom.disabled = disabled;
-    btnStart.disabled = disabled;
-    btnPause.disabled = !disabled;
-    btnResume.disabled = true;
-}
-
-async function startSorting() {
-    if (isSorting || array.length < 2) return;
-
+async function selectionSort() {
     isSorting = true;
     isPaused = false;
-    toggleInputs(true);
-    resetMetrics();
+    clearLogs();
+    addLog("Starting Selection Sort...", "highlight");
 
-    executionLog.innerHTML = "";
-    addLog("Starting Selection Sort...");
+    let n = array.length;
+    highlightCode(1);
+    await sleep(delay);
 
-    const delay = () => SPEED_MAP[speedSelect.value] || 400;
-    const n = array.length;
-
-    highlightPseudocode(1);
-    await sleep(delay());
-
-    for (let i = 0; i < n - 1; i++) {
+    for (let i = 0; i < n; i++) {
         if (!isSorting) return;
-
-        passes++;
-        statPasses.textContent = passes;
         let minIdx = i;
+        addLog(`Pass ${i + 1}: Setting min pointer to index ${i} (${array[i]})`, "pass");
+        highlightCode(2);
+        await sleep(delay);
 
-        addLog(`--- Pass ${passes}: Finding minimum from index ${i} ---`);
-        highlightPseudocode(2);
-        await sleep(delay());
-
-        highlightPseudocode(3);
-        renderArray({ minIdx, sortedCount: i }, 3);
-        await sleep(delay());
+        highlightCode(3);
+        renderArray(array, { i: i, minIdx: minIdx });
+        await sleep(delay);
 
         for (let j = i + 1; j < n; j++) {
             if (!isSorting) return;
-            await checkPause();
 
-            highlightPseudocode(4);
-            comparisons++;
-            statComparisons.textContent = comparisons;
+            renderArray(array, { i: i, j: j, minIdx: minIdx });
+            let bars = document.querySelectorAll(".bar");
+            if (bars[j]) bars[j].classList.add("comparing");
+            if (bars[minIdx]) bars[minIdx].classList.add("pivot");
 
-            renderArray({ minIdx, comparing: [j], sortedCount: i }, 5);
-            addLog(`Comparing index ${j} (${array[j]}) with current min (${array[minIdx]})`);
-            await sleep(delay());
+            highlightCode(4);
+            addLog(`Comparing index ${j} (${array[j]}) with min index ${minIdx} (${array[minIdx]})`);
+            await sleep(delay);
 
+            highlightCode(5);
             if (array[j] < array[minIdx]) {
                 minIdx = j;
-                addLog(`New minimum found at index ${minIdx} (${array[minIdx]})`);
-                renderArray({ minIdx, sortedCount: i }, 5);
-                await sleep(delay());
+                addLog(`New minimum found: ${array[j]} at index ${j}`, "highlight");
+                await sleep(delay);
             }
         }
 
+        highlightCode(6);
         if (minIdx !== i) {
-            swaps++;
-            statSwaps.textContent = swaps;
-
+            addLog(`Swapping index ${i} (${array[i]}) with min index ${minIdx} (${array[minIdx]})`, "swap");
             let temp = array[i];
             array[i] = array[minIdx];
             array[minIdx] = temp;
-
-            arrayInput.value = array.join(" ");
-            renderArray({ swapping: [i, minIdx], sortedCount: i }, 6);
-            addLog(`Swapped index ${i} (${array[i]}) with minimum at index ${minIdx} (${array[minIdx]})`);
-            await sleep(delay());
-        } else {
-            addLog(`Index ${i} (${array[i]}) is already in correct position.`);
         }
 
-        renderArray({ sortedCount: i + 1 });
+        renderArray(array, { i: i });
+        let bars = document.querySelectorAll(".bar");
+        if (bars[i]) bars[i].classList.add("sorted");
     }
 
+    renderArray(array);
+    document.querySelectorAll(".bar").forEach(b => b.classList.add("sorted"));
+    addLog("Array sorted successfully!", "highlight");
+    highlightCode(0);
     isSorting = false;
-    renderArray({ allSorted: true }, null);
-    addLog("🎉 Array fully sorted!");
-
-    btnPause.disabled = true;
-    btnResume.disabled = true;
-    btnStart.disabled = false;
-    arrayInput.disabled = false;
-    arraySizeInput.disabled = false;
-    btnRandom.disabled = false;
 }
 
-function pauseSorting() {
-    if (!isSorting || isPaused) return;
-    isPaused = true;
-    btnPause.disabled = true;
-    btnResume.disabled = false;
-    addLog("⏸ Visualization Paused.");
+function startSorting() {
+    if (isSorting && isPaused) { isPaused = false; return; }
+    if (!isSorting) {
+        array = parseInput();
+        if (array.length === 0) return;
+        selectionSort();
+    }
 }
 
-function resumeSorting() {
-    if (!isSorting || !isPaused) return;
-    isPaused = false;
-    btnPause.disabled = false;
-    btnResume.disabled = true;
-    addLog("▶ Visualization Resumed.");
+function pauseSorting() { isPaused = true; }
+function resumeSorting() { isPaused = false; }
+function resetVisualizer() { isSorting = false; isPaused = false; array = parseInput(); renderArray(array); clearLogs(); highlightCode(0); }
+
+function generateRandomArray() {
+    if (isSorting) return;
+    array = Array.from({ length: 5 }, () => Math.floor(Math.random() * 50) + 1);
+    if (inputField) inputField.value = array.join(" ");
+    renderArray(array);
+    clearLogs();
 }
 
-function resetVisualizer() {
-    isSorting = false;
-    isPaused = false;
-    toggleInputs(false);
-    btnPause.disabled = true;
-    btnResume.disabled = true;
-    parseCustomInput();
+if (speedSelect) {
+    speedSelect.addEventListener("change", (e) => {
+        const val = e.target.value.toLowerCase();
+        delay = val === "slow" ? 800 : val === "fast" ? 150 : 400;
+    });
 }
+
+document.addEventListener("DOMContentLoaded", () => { array = parseInput(); renderArray(array); });
