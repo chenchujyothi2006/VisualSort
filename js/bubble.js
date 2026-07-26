@@ -1,285 +1,208 @@
-// State Management Variables
 let array = [];
 let isSorting = false;
 let isPaused = false;
-let passes = 0;
-let comparisons = 0;
-let swaps = 0;
+let delay = 400;
 
-// Speed Configuration (delays in milliseconds)
-const SPEED_MAP = {
-    slow: 800,
-    medium: 400,
-    fast: 150
-};
-
-// DOM References
 const arrayContainer = document.getElementById("array-container");
-const arrayInput = document.getElementById("array-input");
-const arraySizeInput = document.getElementById("array-size");
+const inputField = document.getElementById("array-input");
+const sizeInput = document.getElementById("array-size");
 const speedSelect = document.getElementById("speed");
+const logBox = document.getElementById("execution-log");
 
-const statPasses = document.getElementById("stat-passes");
-const statComparisons = document.getElementById("stat-comparisons");
-const statSwaps = document.getElementById("stat-swaps");
-const executionLog = document.getElementById("execution-log");
+function sleep(ms) {
+    return new Promise((resolve) => {
+        const check = () => {
+            if (!isPaused) setTimeout(resolve, ms);
+            else setTimeout(check, 100);
+        };
+        check();
+    });
+}
 
-const btnStart = document.getElementById("btn-start");
-const btnPause = document.getElementById("btn-pause");
-const btnResume = document.getElementById("btn-resume");
-const btnRandom = document.getElementById("btn-random");
+function addLog(message, type = "info") {
+    if (!logBox) return;
+    const entry = document.createElement("p");
+    entry.className = `log-entry ${type}`;
+    entry.innerText = `> ${message}`;
+    logBox.appendChild(entry);
+    logBox.scrollTop = logBox.scrollHeight;
+}
 
-// Initialize Event Listeners
-document.addEventListener("DOMContentLoaded", () => {
-    // Sync array input live on typing
-    arrayInput.addEventListener("input", parseCustomInput);
-    
-    // Sync array size dynamically on number change
-    arraySizeInput.addEventListener("change", handleSizeChange);
-    arraySizeInput.addEventListener("input", handleSizeChange);
+function clearLogs() {
+    if (logBox) logBox.innerHTML = "";
+}
 
-    // Initial load
-    parseCustomInput();
-});
-
-// Helper Delay Function for Animations
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Pause Check Handler
-async function checkPause() {
-    while (isPaused && isSorting) {
-        await sleep(100);
+function highlightCode(lineNum) {
+    const lines = document.querySelectorAll(".pseudocode p");
+    lines.forEach((line) => line.classList.remove("active"));
+    if (lineNum > 0) {
+        const activeLine = document.getElementById(`line-${lineNum}`);
+        if (activeLine) activeLine.classList.add("active");
     }
 }
 
-// Render Bars in DOM
-function renderArray(highlightIndices = {}, activeLine = null) {
-    arrayContainer.innerHTML = "";
-    
-    const maxVal = Math.max(...array, 10);
+function parseInput() {
+    if (!inputField) return [];
+    const rawVal = inputField.value.trim();
+    if (!rawVal) return [];
+    return rawVal.split(/[\s,]+/).map(Number).filter((n) => !isNaN(n));
+}
 
-    array.forEach((val, idx) => {
+function renderArray(arr = array, pointers = {}) {
+    if (!arrayContainer) return;
+    arrayContainer.innerHTML = "";
+
+    const maxVal = Math.max(...arr, 1);
+
+    arr.forEach((value, index) => {
+        const wrapper = document.createElement("div");
+        wrapper.classList.add("bar-wrapper");
+
         const bar = document.createElement("div");
         bar.classList.add("bar");
-        
-        // Calculate dynamic height ratio percentage
-        const heightPercent = Math.max((val / maxVal) * 85, 10);
-        bar.style.height = `${heightPercent}%`;
-        
-        // Add value label above or inside bar
-        const label = document.createElement("span");
-        label.classList.add("bar-value");
-        label.textContent = val;
-        bar.appendChild(label);
+        bar.setAttribute("data-index", index);
 
-        // Apply state styling classes
-        if (highlightIndices.comparing && highlightIndices.comparing.includes(idx)) {
-            bar.classList.add("comparing");
-        } else if (highlightIndices.swapping && highlightIndices.swapping.includes(idx)) {
-            bar.classList.add("swapping");
-        } else if (highlightIndices.sortedFrom <= idx) {
-            bar.classList.add("sorted");
-        } else if (highlightIndices.allSorted) {
-            bar.classList.add("sorted");
-        } else {
-            bar.classList.add("unsorted");
+        const heightPercent = Math.min((value / maxVal) * 75 + 15, 95);
+        bar.style.height = `${heightPercent}%`;
+        bar.innerText = value;
+
+        wrapper.appendChild(bar);
+
+        let pointerText = [];
+        if (pointers.i === index) pointerText.push("i");
+        if (pointers.j === index) pointerText.push("j");
+        if (pointers.jNext === index) pointerText.push("j+1");
+
+        if (pointerText.length > 0) {
+            const label = document.createElement("div");
+            label.classList.add("pointer-label");
+            label.innerText = pointerText.join(",");
+            wrapper.appendChild(label);
         }
 
-        arrayContainer.appendChild(bar);
+        arrayContainer.appendChild(wrapper);
     });
-
-    // Pseudocode line highlight
-    highlightPseudocode(activeLine);
 }
 
-// Highlight Pseudocode Line
-function highlightPseudocode(lineId) {
-    document.querySelectorAll(".pseudocode p").forEach(p => p.classList.remove("active-line"));
-    if (lineId) {
-        const target = document.getElementById(`line-${lineId}`);
-        if (target) target.classList.add("active-line");
-    }
-}
-
-// Append Log Entry
-function addLog(message) {
-    const p = document.createElement("p");
-    p.classList.add("log-entry");
-    p.textContent = message;
-    executionLog.appendChild(p);
-    executionLog.scrollTop = executionLog.scrollHeight;
-}
-
-// Reset Metrics Output
-function resetMetrics() {
-    passes = 0;
-    comparisons = 0;
-    swaps = 0;
-    statPasses.textContent = "0";
-    statComparisons.textContent = "0";
-    statSwaps.textContent = "0";
-    executionLog.innerHTML = '<p class="log-entry">Click "Start Sorting" to view execution steps...</p>';
-    highlightPseudocode(null);
-}
-
-// Parse space/comma separated input string live
-function parseCustomInput() {
-    if (isSorting) return;
-
-    const raw = arrayInput.value.trim();
-    if (!raw) {
-        array = [];
-        arrayContainer.innerHTML = "";
-        return;
-    }
-
-    const parsed = raw.split(/[\s,]+/).map(Number).filter(n => !isNaN(n));
-    if (parsed.length > 0) {
-        array = parsed.slice(0, 20); // Cap max elements at 20 for UI cleanliness
-        arraySizeInput.value = array.length;
-        resetMetrics();
-        renderArray();
-    }
-}
-
-// Generate new array based on Array Size control change
-function handleSizeChange() {
-    if (isSorting) return;
-    
-    let size = parseInt(arraySizeInput.value) || 5;
-    size = Math.min(Math.max(size, 2), 20);
-    arraySizeInput.value = size;
-
-    // Generate random values for new size
-    array = Array.from({ length: size }, () => Math.floor(Math.random() * 90) + 10);
-    arrayInput.value = array.join(" ");
-    resetMetrics();
-    renderArray();
-}
-
-// Generate Random Array Button Handler
 function generateRandomArray() {
     if (isSorting) return;
-    const size = parseInt(arraySizeInput.value) || 5;
-    array = Array.from({ length: size }, () => Math.floor(Math.random() * 90) + 10);
-    arrayInput.value = array.join(" ");
-    resetMetrics();
-    renderArray();
+    const randomArr = Array.from({ length: 5 }, () => Math.floor(Math.random() * 50) + 1);
+    inputField.value = randomArr.join(" ");
+    array = randomArr;
+    if (sizeInput) sizeInput.value = array.length;
+    renderArray(array);
+    clearLogs();
+    addLog("Generated random array: [" + array.join(", ") + "]");
 }
 
-// Control State Toggling
-function toggleInputs(disabled) {
-    arrayInput.disabled = disabled;
-    arraySizeInput.disabled = disabled;
-    btnRandom.disabled = disabled;
-    btnStart.disabled = disabled;
-    btnPause.disabled = !disabled;
-    btnResume.disabled = true;
-}
-
-// Start Sorting Execution
-async function startSorting() {
-    if (isSorting || array.length < 2) return;
-
+async function bubbleSort() {
     isSorting = true;
     isPaused = false;
-    toggleInputs(true);
-    resetMetrics();
+    clearLogs();
+    addLog("Starting Bubble Sort...", "highlight");
 
-    executionLog.innerHTML = "";
-    addLog("Starting Bubble Sort...");
+    let n = array.length;
+    highlightCode(1);
+    await sleep(delay);
 
-    const delay = () => SPEED_MAP[speedSelect.value] || 400;
-    const n = array.length;
-
-    highlightPseudocode(1);
-    await sleep(delay());
-    
-    highlightPseudocode(2);
-    await sleep(delay());
+    highlightCode(2);
+    await sleep(delay);
 
     for (let i = 0; i < n - 1; i++) {
         if (!isSorting) return;
-        
-        passes++;
-        statPasses.textContent = passes;
-        addLog(`--- Pass ${passes} Started ---`);
-        highlightPseudocode(3);
-        await sleep(delay());
+        addLog(`Pass ${i + 1}: Outer loop (i = ${i})`, "pass");
+        highlightCode(3);
+        await sleep(delay);
 
         for (let j = 0; j < n - i - 1; j++) {
             if (!isSorting) return;
-            await checkPause();
 
-            highlightPseudocode(4);
-            
-            // Highlight current pair comparison
-            comparisons++;
-            statComparisons.textContent = comparisons;
-            renderArray({ comparing: [j, j + 1], sortedFrom: n - i }, 5);
-            addLog(`Comparing index ${j} (${array[j]}) and index ${j + 1} (${array[j + 1]})`);
-            await sleep(delay());
+            renderArray(array, { i: i, j: j, jNext: j + 1 });
+            let bars = document.querySelectorAll(".bar");
+
+            highlightCode(4);
+            bars[j].classList.add("comparing");
+            bars[j + 1].classList.add("comparing");
+            addLog(`Comparing index ${j} (${array[j]}) & ${j + 1} (${array[j + 1]})`);
+            await sleep(delay);
+
+            highlightCode(5);
+            await sleep(delay);
 
             if (array[j] > array[j + 1]) {
-                // Swap values
-                swaps++;
-                statSwaps.textContent = swaps;
-                
+                highlightCode(6);
+                bars[j].classList.remove("comparing");
+                bars[j + 1].classList.remove("comparing");
+                bars[j].classList.add("swapping");
+                bars[j + 1].classList.add("swapping");
+                addLog(`Swapping ${array[j]} and ${array[j + 1]}`, "swap");
+                await sleep(delay);
+
                 let temp = array[j];
                 array[j] = array[j + 1];
                 array[j + 1] = temp;
 
-                // Live sync text box during sorting
-                arrayInput.value = array.join(" ");
-
-                renderArray({ swapping: [j, j + 1], sortedFrom: n - i }, 6);
-                addLog(`Swapped: ${array[j + 1]} > ${array[j]}`);
-                await sleep(delay());
+                renderArray(array, { i: i, j: j, jNext: j + 1 });
+                bars = document.querySelectorAll(".bar");
+                bars[j].classList.add("swapping");
+                bars[j + 1].classList.add("swapping");
+                await sleep(delay);
             }
         }
 
-        renderArray({ sortedFrom: n - i - 1 }, 7);
-        addLog(`Element ${array[n - i - 1]} locked into sorted position.`);
-        await sleep(delay());
+        highlightCode(7);
+        renderArray(array, { i: i });
+        let bars = document.querySelectorAll(".bar");
+        bars[n - i - 1].classList.add("sorted");
+        addLog(`Element ${array[n - i - 1]} is now sorted!`, "sorted");
     }
 
-    // Sorting Complete State
+    renderArray(array);
+    document.querySelectorAll(".bar").forEach(b => b.classList.add("sorted"));
+    addLog("Array sorted successfully!", "highlight");
+    highlightCode(0);
     isSorting = false;
-    renderArray({ allSorted: true }, null);
-    addLog("🎉 Array fully sorted!");
-    
-    btnPause.disabled = true;
-    btnResume.disabled = true;
-    btnStart.disabled = false;
-    arrayInput.disabled = false;
-    arraySizeInput.disabled = false;
-    btnRandom.disabled = false;
 }
 
-// Pause Execution
-function pauseSorting() {
-    if (!isSorting || isPaused) return;
-    isPaused = true;
-    btnPause.disabled = true;
-    btnResume.disabled = false;
-    addLog("⏸ Visualization Paused.");
+if (speedSelect) {
+    speedSelect.addEventListener("change", (e) => {
+        const val = e.target.value.toLowerCase();
+        delay = val === "slow" ? 800 : val === "fast" ? 150 : 400;
+    });
 }
 
-// Resume Execution
-function resumeSorting() {
-    if (!isSorting || !isPaused) return;
-    isPaused = false;
-    btnPause.disabled = false;
-    btnResume.disabled = true;
-    addLog("▶ Visualization Resumed.");
+if (inputField) {
+    inputField.addEventListener("input", () => {
+        if (!isSorting) {
+            array = parseInput();
+            if (sizeInput) sizeInput.value = array.length;
+            renderArray(array);
+            clearLogs();
+        }
+    });
 }
 
-// Reset Visualizer State
+function startSorting() {
+    if (isSorting && isPaused) { isPaused = false; return; }
+    if (!isSorting) {
+        array = parseInput();
+        if (array.length === 0) return;
+        bubbleSort();
+    }
+}
+
+function pauseSorting() { if (isSorting) isPaused = true; }
+function resumeSorting() { if (isSorting && isPaused) isPaused = false; }
 function resetVisualizer() {
     isSorting = false;
     isPaused = false;
-    toggleInputs(false);
-    btnPause.disabled = true;
-    btnResume.disabled = true;
-    parseCustomInput();
+    array = parseInput();
+    renderArray(array);
+    highlightCode(0);
+    clearLogs();
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+    array = parseInput();
+    renderArray(array);
+});
